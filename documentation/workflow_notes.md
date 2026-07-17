@@ -105,3 +105,10 @@ Validation performed on July 16, 2026 (America/Toronto):
 7. Verified that the second capture had the 6:00 PM timeslot selected and showed its distinct seat availability.
 8. Exited through the preview close control; `Buy Tickets` was never clicked.
 
+## Screenshot cleanup
+
+- Cineplex places a fixed `Copy Link` / `Buy Tickets` action sheet over the bottom of the seat-preview viewport.
+- Before every screenshot, the crawler hides the action sheet's full-width wrapper using the stable `bottom-sheet` test ID.
+- The cleanup runs after entering each Preview Seats page and again after every timeslot switch because the live page may recreate the element during a rerender.
+- Only the obstructing action sheet is hidden; the movie details, timeslot controls, seat map, legend, and availability state remain unchanged.
+

@@ -523,6 +523,25 @@ async def _wait_for_seat_map(page: Page) -> None:
         # no standard seat marker. The page title still proves the preview loaded.
         pass
     await page.wait_for_timeout(350)
+    await hide_preview_obstructions(page)
+
+
+async def hide_preview_obstructions(page: Page) -> bool:
+    """Hide Cineplex's fixed action sheet before capturing the seat map.
+
+    The preview page may recreate this footer when a different timeslot is
+    selected, so callers intentionally run this after every seat-map load.
+    """
+    return await page.evaluate(
+        """() => {
+            const sheet = document.querySelector('[data-testid="bottom-sheet"]');
+            if (!sheet) return false;
+            const wrapper = sheet.closest('[class*="SimpleContainer_bottomSheet"]') || sheet;
+            wrapper.setAttribute('data-crawler-hidden', 'bottom-sheet');
+            wrapper.style.setProperty('display', 'none', 'important');
+            return true;
+        }"""
+    )
 
 
 async def capture_preview_group(
