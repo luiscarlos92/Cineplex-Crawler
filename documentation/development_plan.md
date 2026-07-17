@@ -33,7 +33,7 @@
 - Terminal selections and optional command-line selections are implemented, including explicit `any` experiences and `all` dates.
 - The nested date → preview group → overlay timeslot loop is implemented with deterministic collision-safe screenshot names.
 - Every execution writes a timestamped JSON report without modifying the hand-written workflow notes.
-- Every invocation creates a unique UTC-timestamped screenshot subfolder beneath the configured output root.
+- Every invocation creates a unique `YYYYMMDD-HHMMSS-MovieName-TheatreName` screenshot subfolder beneath the configured output root.
 - A bounded live run captured and visually verified two different timeslots from the same `UltraAVX + D-BOX` preview group.
 - Seat-preview captures hide Cineplex's fixed bottom action sheet after every preview load and timeslot rerender so it cannot cover seats or the legend.
 - The deterministic regression suite covers configuration, normalization, parsing, naming, collision handling, and selection matching; a live smoke test is opt-in.

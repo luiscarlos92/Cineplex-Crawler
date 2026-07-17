@@ -61,11 +61,22 @@ def test_unique_path_adds_suffix_without_overwriting(tmp_path):
 def test_create_run_output_dir_uses_timestamp_and_avoids_collisions(tmp_path):
     started_at = datetime(2026, 7, 17, 3, 15, 30, tzinfo=timezone.utc)
 
-    first = crawler.create_run_output_dir(tmp_path / "output", started_at)
-    second = crawler.create_run_output_dir(tmp_path / "output", started_at)
+    first = crawler.create_run_output_dir(
+        tmp_path / "output",
+        started_at,
+        "The Odyssey",
+        "Cineplex Yonge-Eglinton",
+    )
+    second = crawler.create_run_output_dir(
+        tmp_path / "output",
+        started_at,
+        "The Odyssey",
+        "Cineplex Yonge-Eglinton",
+    )
 
-    assert first == tmp_path / "output" / "20260717T031530Z"
-    assert second == tmp_path / "output" / "20260717T031530Z_2"
+    expected = "20260717-031530-The_Odyssey-Cineplex_Yonge-Eglinton"
+    assert first == tmp_path / "output" / expected
+    assert second == tmp_path / "output" / f"{expected}_2"
     assert first.is_dir()
     assert second.is_dir()
 

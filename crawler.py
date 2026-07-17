@@ -208,15 +208,24 @@ def unique_path(path: Path) -> Path:
     raise RuntimeError(f"Could not find a free output filename for {path.name}")
 
 
-def create_run_output_dir(output_root: Path, started_at: datetime | None = None) -> Path:
-    """Create one collision-safe UTC timestamp folder for a crawler invocation."""
+def create_run_output_dir(
+    output_root: Path,
+    started_at: datetime,
+    movie_name: str,
+    theatre_name: str,
+) -> Path:
+    """Create one descriptive, collision-safe folder for a crawler invocation."""
     timestamp = (started_at or datetime.now(timezone.utc)).astimezone(timezone.utc)
-    folder_name = timestamp.strftime("%Y%m%dT%H%M%SZ")
+    folder_name = "-".join(
+        (
+            timestamp.strftime("%Y%m%d-%H%M%S"),
+            safe_filename(movie_name, 45),
+            safe_filename(theatre_name, 55),
+        )
+    )
     run_dir = unique_path(output_root / folder_name)
     run_dir.mkdir(parents=True, exist_ok=False)
     return run_dir
-
-
 def build_output_path(
     movie: str,
     theatre: str,
@@ -717,13 +726,11 @@ async def run(args: argparse.Namespace) -> int:
 
     started_at = datetime.now(timezone.utc)
     output_root = config.output_dir
-    run_output_dir = create_run_output_dir(output_root, started_at)
-    config = replace(config, output_dir=run_output_dir)
     report: dict[str, object] = {
         "started_at": started_at.isoformat(),
         "status": "running",
         "output_root": str(output_root),
-        "output_dir": str(run_output_dir),
+        "output_dir": None,
         "config": _serialize_config(config),
         "captures": [],
         "errors": [],
@@ -784,6 +791,17 @@ async def run(args: argparse.Namespace) -> int:
             assert isinstance(theatre, TheatreOption)
             await select_theatre(page, theatre)
             report["theatre"] = asdict(theatre)
+
+            run_output_dir = create_run_output_dir(
+                output_root,
+                started_at,
+                movie.title,
+                theatre.name,
+            )
+            config = replace(config, output_dir=run_output_dir)
+            report["output_dir"] = str(run_output_dir)
+            report["config"] = _serialize_config(config)
+            print(f"Run output directory: {run_output_dir}")
 
             experiences = await collect_experience_options(page)
             cli_experiences = _split_cli_values(args.experience)
