@@ -1,0 +1,1510 @@
+{
+  "props": {
+    "pageProps": {
+      "featureFlags": {
+        "allowDebugMenu": true,
+        "allowVipPayment": true,
+        "autoplayTrailerPocIds": "27408",
+        "autoplayTrailerPocSrc": "https://mediafiles.cineplex.com/trailers-poc/AFA_trailer_start_6s.mp4",
+        "autoplayTrailerPocVariant": "hybrid",
+        "cineClubUpdates": true,
+        "cineclubPriceIncreaseTransition": "after",
+        "communityDay": true,
+        "consolidateGiftCardsMessage": false,
+        "debugMenuActivationCornerSizePx": 0,
+        "enableDemoPage": true,
+        "enableGlobalAlert": false,
+        "enableHomepageRails": false,
+        "enableInternalAdsDNT": true,
+        "enableMostSnacked": true,
+        "enableNewSearchDrawer": true,
+        "enablePersonalizationRail": false,
+        "enablePriceIncreaseUpdates": true,
+        "enableRokt": true,
+        "enableScene2XBlock": true,
+        "enableSmartModifierSection": false,
+        "isGiftingDisabled": false,
+        "limitedTimeBadge": true,
+        "loadCartInBackground": true,
+        "myTicketPage": false,
+        "newShowtimesDrawerFilters": true,
+        "oneTimePaymentSnacks": true,
+        "oneTimePaymentTicketing": true,
+        "oneTimePaymentVip": false,
+        "partyBookings": true,
+        "showGenreOnNewPoster": false,
+        "sliverBanner": true,
+        "snacksCartUpsellBlock": false,
+        "ticketingDebugPage": true,
+        "ticketingVisdCrosslink": true,
+        "useV1OnHomepage": true,
+        "vipMenu": true,
+        "vipMenuCustomSubcategories": true,
+        "vipMenuCustomSubcategoriesHandpickMenuItemsForConflicts": true,
+        "vipMenuTacoTuesdayEnabled": true
+      },
+      "core": {
+        "contentID": 300296,
+        "definitionName": "Core",
+        "maintenanceEndTime": "11:30 AM EST",
+        "toastAutoHideDuration": "3000",
+        "debugMenuActivationCorner": "bottomRight",
+        "debugMenuActivationCornerSizePx": "80",
+        "debugMenuActivationCornerShow": "false",
+        "debugMenuActivationCornerMobileOnly": "false",
+        "debugPrintMobileAppMessages": "true"
+      },
+      "smartSheet": {
+        "contentID": 298101,
+        "definitionName": "SmartSheetBanner",
+        "heading": "Movie lovers prefer our app",
+        "appName": "Cineplex Entertainment",
+        "appCaption": "Where Escape Begins",
+        "openCta": "Open",
+        "largeBannerImage": {
+          "label": null,
+          "url": "https://mediafiles.cineplex.com/Movies/PhotoGallery/large-banner-image_20260622094341.png",
+          "target": null,
+          "filesize": 412086,
+          "pixelHeight": "437",
+          "pixelWidth": "676",
+          "height": 437,
+          "width": 676
+        }
+      },
+      "globalAlerts": [
+        {
+          "contentID": 305979,
+          "definitionName": "GlobalAlertList",
+          "pageName": "Ticketing Preview Test (non-dissmissible)",
+          "route": "/ticketing/preview",
+          "alertMessage": {
+            "contentID": 305980,
+            "definitionName": "GlobalAlertMessage",
+            "title": "Maintenance Alert Message",
+            "message": "<p><b>We&rsquo;re making some updates!</b> - Website will be temporarily unavailable for maintenance on between <b>2am-4am</b>. Thank you for your patience!</p>",
+            "ariaLabelClose": "Close"
+          },
+          "message_ValueField": "305980",
+          "dismissible": "false"
+        },
+        {
+          "contentID": 306293,
+          "definitionName": "GlobalAlertList",
+          "pageName": "Mobile App - Ticketing Preview Test (non-dissmissible)",
+          "route": "/en-Mobile/ticketing/preview",
+          "alertMessage": {
+            "contentID": 305980,
+            "definitionName": "GlobalAlertMessage",
+            "title": "Maintenance Alert Message",
+            "message": "<p><b>We&rsquo;re making some updates!</b> - Website will be temporarily unavailable for maintenance on between <b>2am-4am</b>. Thank you for your patience!</p>",
+            "ariaLabelClose": "Close"
+          },
+          "message_ValueField": "305980",
+          "dismissible": "false"
+        },
+        {
+          "contentID": 306340,
+          "definitionName": "GlobalAlertList",
+          "pageName": "Ticketing Test Page",
+          "route": "/ticketing/test",
+          "alertMessage": {
+            "contentID": 305980,
+            "definitionName": "GlobalAlertMessage",
+            "title": "Maintenance Alert Message",
+            "message": "<p><b>We&rsquo;re making some updates!</b> - Website will be temporarily unavailable for maintenance on between <b>2am-4am</b>. Thank you for your patience!</p>",
+            "ariaLabelClose": "Close"
+          },
+          "message_ValueField": "305980",
+          "dismissible": "true"
+        }
+      ],
+      "communityDayFilmIds": [
+        60475
+      ],
+      "header": {
+        "contentID": 249828,
+        "definitionName": "GlobalElementsHeader",
+        "subNav": [
+          {
+            "contentID": 249821,
+            "definitionName": "GlobalElementsHeaderSubNavItem",
+            "label": "What's On",
+            "dropdown": [
+              {
+                "contentID": 254197,
+                "definitionName": "GlobalElementsDropdownItem",
+                "identifier": "What's on",
+                "links": [
+                  {
+                    "contentID": 249700,
+                    "definitionName": "GlobalElementsLink",
+                    "link": {
+                      "href": "/#cineplex-movies-grid",
+                      "target": "",
+                      "text": "Movies"
+                    }
+                  },
+                  {
+                    "contentID": 249699,
+                    "definitionName": "GlobalElementsLink",
+                    "link": {
+                      "href": "/events?ic=cpx_global-nav-en_events",
+                      "target": "",
+                      "text": "Event Cinema"
+                    }
+                  },
+                  {
+                    "contentID": 249706,
+                    "definitionName": "GlobalElementsLink",
+                    "link": {
+                      "href": "/news?ic=cpx_global-nav-en_news",
+                      "target": "",
+                      "text": "News"
+                    }
+                  },
+                  {
+                    "contentID": 262360,
+                    "definitionName": "GlobalElementsLink",
+                    "link": {
+                      "href": "/international?ic=cpx_global-nav-en_international",
+                      "target": "",
+                      "text": "International Cinema"
+                    }
+                  }
+                ],
+                "links_ValueField": "249700,249699,262360,249706",
+                "links_TextField": "<a href=\"~/#cineplex-movies-grid\" target=\"\">Movies</a>,<a href=\"~/events?ic=cpx_global-nav-en_events\" target=\"\">Event Cinema</a>,<a href=\"~/international?ic=cpx_global-nav-en_international\" target=\"\">International Cinema</a>,<a href=\"~/news?ic=cpx_global-nav-en_news\" target=\"\">News</a>"
+              }
+            ],
+            "isNew": "false",
+            "dropdown_ValueField": "254197",
+            "dropdown_TextField": "What's on"
+          },
+          {
+            "contentID": 249822,
+            "definitionName": "GlobalElementsHeaderSubNavItem",
+            "label": "Experiences",
+            "link": {
+              "href": "/experiences?ic=cpx_global-nav-en_experiences",
+              "target": "_self",
+              "text": "Premium Experiences"
+            }
+          },
+          {
+            "contentID": 258793,
+            "definitionName": "GlobalElementsHeaderSubNavItem",
+            "label": "Gaming",
+            "link": {
+              "href": "/games/xscape?ic=cpx_global-nav-en_xscape",
+              "target": "",
+              "text": "Gaming"
+            },
+            "isNew": "false"
+          },
+          {
+            "contentID": 251949,
+            "definitionName": "GlobalElementsHeaderSubNavItem",
+            "label": "CineClub",
+            "link": {
+              "href": "/cineclub?ic=cpx_globalnav-en_cineclub",
+              "target": "_self",
+              "text": "CineClub"
+            },
+            "isNew": "false"
+          },
+          {
+            "contentID": 249823,
+            "definitionName": "GlobalElementsHeaderSubNavItem",
+            "label": "Food & Drink",
+            "link": {
+              "href": "/theatres/food-and-drinks?ic=cpx_global-nav-en_foodanddrink",
+              "target": "",
+              "text": "Food & Drink"
+            }
+          },
+          {
+            "contentID": 249824,
+            "definitionName": "GlobalElementsHeaderSubNavItem",
+            "label": "Deals",
+            "link": {
+              "href": "/deals?ic=cpx_global-nav-en_deals",
+              "target": "",
+              "text": "Deals"
+            },
+            "isNew": "false"
+          },
+          {
+            "contentID": 249825,
+            "definitionName": "GlobalElementsHeaderSubNavItem",
+            "label": "Parties & Groups",
+            "link": {
+              "href": "/parties-and-groups?ic=cpx_global-nav-en_partiesandgroups",
+              "target": "_self",
+              "text": "Parties & Groups"
+            }
+          },
+          {
+            "contentID": 308495,
+            "definitionName": "GlobalElementsHeaderSubNavItem",
+            "label": "Merch Shop",
+            "link": {
+              "href": "https://shop.cineplex.com/?utm_source=https://www.cineplex.com/&utm_medium=referral&utm_campaign=referral-header&utm_term=&utm_content=",
+              "target": "_blank",
+              "text": "Merch Shop"
+            },
+            "isNew": "true"
+          },
+          {
+            "contentID": 249826,
+            "definitionName": "GlobalElementsHeaderSubNavItem",
+            "label": "Gift Cards",
+            "link": {
+              "href": "/giftcards?ic=cpx_global-nav-en_giftcards",
+              "target": "_self",
+              "text": "Gift Cards"
+            }
+          }
+        ],
+        "subNav_ValueField": "249821,249822,258793,251949,249823,249824,249825,249826,308495",
+        "subNav_TextField": "What's On,Experiences,Gaming,CineClub,Food & Drink,Deals,Parties & Groups,Gift Cards,Movie Merch",
+        "notifications": [
+          {
+            "contentID": 253150,
+            "definitionName": "CineplexNotification",
+            "pageName": "Global Elements Test Page",
+            "route": "/testing/global-elements",
+            "notificationMessage": null,
+            "notificationMessage_TextField": "Global Elements Health and Safety Test",
+            "notificationMessage_ValueField": "253152"
+          },
+          {
+            "contentID": 263891,
+            "definitionName": "CineplexNotification",
+            "pageName": "Fifth Avenue Cinemas (age restricted 19+)",
+            "route": "/theatre/fifth-avenue-cinemas-age-restricted-19",
+            "notificationMessage": {
+              "contentID": 264171,
+              "definitionName": "CineplexNotificationMessage",
+              "title": "Theatre Alerts",
+              "message": "<span>In accordance to our Liquor Primary Licence, admittance is restricted to 19 years of age or older (age of majority). Please note that valid Government issued photo ID and secondary ID may be requested at the theatre for admittance.</span>",
+              "ariaLabelClose": "Dismiss message"
+            },
+            "notificationMessage_TextField": "age restricted 19+",
+            "notificationMessage_ValueField": "264171"
+          }
+        ],
+        "notifications_TextField": "Global Elements Test Page,Cineplex VIP Cinemas Brentwood (age restricted 19+),SilverCity St. Vital Cinemas,Fifth Avenue Cinemas (age restricted 19+),Home,Home (EN specified)",
+        "notifications_ValueField": "253150,264182,270982,263891,306341,306342",
+        "metaNav": [
+          {
+            "contentID": 254443,
+            "definitionName": "GlobalElementsMetaNav",
+            "metaNavLinks": [
+              {
+                "contentID": 254770,
+                "definitionName": "MetaNavLinks",
+                "type": "tickets",
+                "link": {
+                  "href": "",
+                  "target": "_self",
+                  "text": "Tickets"
+                }
+              },
+              {
+                "contentID": 254771,
+                "definitionName": "MetaNavLinks",
+                "type": "theatres",
+                "link": {
+                  "href": "/Theatres/TheatreListings?cmpid=MetaNavEN_location",
+                  "target": "_self",
+                  "text": "Theatres"
+                }
+              },
+              {
+                "contentID": 254772,
+                "definitionName": "MetaNavLinks",
+                "type": "search",
+                "link": {
+                  "href": "",
+                  "target": "",
+                  "text": "Search"
+                }
+              },
+              {
+                "contentID": 301344,
+                "definitionName": "MetaNavLinks",
+                "type": "searchV2",
+                "link": {
+                  "href": "",
+                  "target": "",
+                  "text": "Search"
+                }
+              },
+              {
+                "contentID": 254773,
+                "definitionName": "MetaNavLinks",
+                "type": "account",
+                "link": {
+                  "href": "",
+                  "target": "_self",
+                  "text": "Account"
+                }
+              }
+            ],
+            "showtimesContent": [
+              {
+                "contentID": 254712,
+                "definitionName": "ShowtimesDrawerContent",
+                "title": "Tickets",
+                "errorMessage": "Sorry, we are having trouble listing the results. Please try again later. ",
+                "noShowTimesWarning": "No showtimes found  ",
+                "generalWarning": "Please try selecting another date, theatre, or removing some filters",
+                "backButtonLabel": "Back",
+                "seatPreview": "Preview seats",
+                "viewingSystem": [
+                  {
+                    "contentID": 256554,
+                    "definitionName": "ViewingSystem",
+                    "ccds": [
+                      {
+                        "contentID": 256555,
+                        "definitionName": "ViewingSystemContent",
+                        "label": "(CC/DS)",
+                        "description": "Closed Captions for the hearing impaired and Descriptive Service for the visually impaired."
+                      }
+                    ],
+                    "noPasses": [
+                      {
+                        "contentID": 256556,
+                        "definitionName": "ViewingSystemContent",
+                        "label": "No passes (CC/DS)",
+                        "description": "Closed Captions for the hearing impaired and Descriptive Service for the visually impaired."
+                      }
+                    ],
+                    "closedCaptions": [
+                      {
+                        "contentID": 269652,
+                        "definitionName": "ViewingSystemContent",
+                        "label": "(CC)",
+                        "description": "Closed Captions for the hearing impaired.",
+                        "badge": {
+                          "label": null,
+                          "url": "https://mediafiles.cineplex.com/cineplex-v2/experience-badges/closed-caption.svg",
+                          "target": null,
+                          "filesize": 744,
+                          "pixelHeight": "0",
+                          "pixelWidth": "0"
+                        }
+                      }
+                    ],
+                    "descriptiveSubtitles": [
+                      {
+                        "contentID": 273077,
+                        "definitionName": "ViewingSystemContent",
+                        "label": "(DS)",
+                        "description": "Descriptive Service for the visually impaired.",
+                        "badge": {
+                          "label": null,
+                          "url": "https://mediafiles.cineplex.com/cineplex-v2/experience-badges/described-video.svg",
+                          "target": null,
+                          "filesize": 534,
+                          "pixelHeight": "0",
+                          "pixelWidth": "0"
+                        }
+                      }
+                    ]
+                  }
+                ],
+                "selectMovieButton": [
+                  {
+                    "contentID": 254713,
+                    "definitionName": "SelectMovieButton",
+                    "buttonKey": "selectMovie",
+                    "label": "Movie",
+                    "defaultSelectedOption": "All Movies"
+                  }
+                ],
+                "selectTheatreButton": [
+                  {
+                    "contentID": 254714,
+                    "definitionName": "SelectTheatreButton",
+                    "buttonKey": "selectTheatre",
+                    "label": "Theatre",
+                    "warningLabel": "Select Theatre",
+                    "defaultSelectedOption": "Theatres near me"
+                  }
+                ],
+                "selectedOptionsWarning": [
+                  {
+                    "contentID": 254725,
+                    "definitionName": "WarningMessages",
+                    "date": "There are no showtimes for selected movie for this date. Please update the date to see results.",
+                    "theatre": "There are no showtimes for selected movie for this theatre. Please update the theatre to see results.",
+                    "dateAndTheatre": "There are no showtimes for selected movie for this date and theatre. Please update the date and theatre to see results.",
+                    "movie": "No showtime for selected movie. Please update movie to see showtimes",
+                    "filter": "No Showtimes for this experience"
+                  }
+                ],
+                "selectorWarningMessages": [
+                  {
+                    "contentID": 289953,
+                    "definitionName": "SelectorWarningMessages",
+                    "date": "There are no showtimes for selected movie for this date. Please update the date to see results.",
+                    "theatre": "There are no showtimes for selected movie for this theatre. Please update the theatre to see results.",
+                    "dateAndTheatre": "There are no showtimes for selected movie for this date and theatre. Please update the date and theatre to see results.",
+                    "movie": "No showtime for selected movie. Please update movie to see showtimes",
+                    "filter": "No Showtimes for this experience"
+                  }
+                ],
+                "selectDateButton": [
+                  {
+                    "contentID": 254715,
+                    "definitionName": "SelectDateButton",
+                    "buttonKey": "selectDate",
+                    "label": "Date",
+                    "warningLabel": "Select Date"
+                  }
+                ],
+                "selectMovieDrawer": [
+                  {
+                    "contentID": 254716,
+                    "definitionName": "SelectMovieDrawerContent",
+                    "title": "Select movie",
+                    "errorMessage": "Error loading movies",
+                    "filterPlaceholder": "Search movies",
+                    "filterClearButtonAriaLabel": "Clear search input",
+                    "noMatchingFilterMessage": "No matching movies found",
+                    "resetDefaultButtonLabel": "See All Movies",
+                    "advanceTicketLabel": "Advance ticket",
+                    "comingSoonLabel": "Coming soon"
+                  }
+                ],
+                "selectDateDrawer": [
+                  {
+                    "contentID": 254717,
+                    "definitionName": "SelectDateDrawerContent",
+                    "title": "Select date",
+                    "errorMessage": "Sorry, we are having trouble listing the results. Please try again later.",
+                    "noDatesMessage": "No dates for selected options, please change your options to see results",
+                    "noDatesAvailableError": [
+                      {
+                        "contentID": 285407,
+                        "definitionName": "ShowtimeError",
+                        "reference": "No Dates Available",
+                        "heading": "Sorry, no dates for selected options",
+                        "body": "Please change your options to see results."
+                      }
+                    ],
+                    "infoMessage": "Showtimes are dynamic\u2026 just like you. We update each week no later than Thursday."
+                  }
+                ],
+                "selectTheatreDrawer": [
+                  {
+                    "contentID": 254718,
+                    "definitionName": "SelectTheatreDrawer",
+                    "title": "Select a theatre",
+                    "errorMessage": "Error loading theatres",
+                    "filterPlaceholder": "Search by theatres or cities",
+                    "resetDefaultButtonLabel": "See All Theatres Nearby",
+                    "theatreFilterWarnings": [
+                      {
+                        "contentID": 254719,
+                        "definitionName": "Notheatrematchingresultmessagesforappliedfilter",
+                        "noTheatresForAppliedFilter": "No search results for",
+                        "noTheatrePlayingInSelectedCityForAppliedFilter": "No theatre screening selected movie in",
+                        "noTheatrePlayingSelectedMovieForAppliedFilter": "No search results for theatres that is screening selected movie",
+                        "noTheatrePlayingSelectedOptions": "There are no showtimes for selected options. Please update your selection to see results."
+                      }
+                    ],
+                    "theatresNotScreeningSelectedMovieSectionLabel": "No showtimes available",
+                    "citiesSectionLabel": "CITIES",
+                    "tooltips": [
+                      {
+                        "contentID": 254720,
+                        "definitionName": "SelectTheatreDrawerTooltips",
+                        "loginPromptTooltip": [
+                          {
+                            "contentID": 254746,
+                            "definitionName": "Tooltip",
+                            "content": "Please login to favorite this theatre",
+                            "highlightedText": "login"
+                          }
+                        ],
+                        "defaultError": [
+                          {
+                            "contentID": 254722,
+                            "definitionName": "Tooltip",
+                            "content": "Error, please try again"
+                          }
+                        ],
+                        "maximimTheatresLimit": [
+                          {
+                            "contentID": 254723,
+                            "definitionName": "Tooltip",
+                            "content": "Maximum favourite theatre limit reached"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                "previewSeats": [
+                  {
+                    "contentID": 254777,
+                    "definitionName": "GlobalElementsPreviewSeatsDrawerConnect",
+                    "title": "Preview Seats",
+                    "getTicketsCta": "Get Tickets for this showtime",
+                    "soldOutLabel": "Sold Out"
+                  }
+                ],
+                "selectFilterDrawer": [
+                  {
+                    "contentID": 260655,
+                    "definitionName": "FilterDrawerContent",
+                    "title": "Filter",
+                    "filtersLabels": [
+                      {
+                        "contentID": 260656,
+                        "definitionName": "FiltersLabel",
+                        "experiences": "Experiences",
+                        "ratings": "Ratings",
+                        "languages": "Languages"
+                      }
+                    ],
+                    "clearButtonLabel": "Clear All",
+                    "clearAllAriaStatusMessage": "Filters cleared",
+                    "applyButtonLabel": "Apply",
+                    "appliedAriaStatusMessage": "Filters applied",
+                    "errorMessage": "Sorry something went wrong please try again in a bit",
+                    "visitExperiencesLink": "Visit our [link] page to learn more.",
+                    "experiencesLinkText": "Experiences",
+                    "noFilterSelectedErrorMessage": "Please select at least one option",
+                    "omittedFiltersInFilterDrawer": "imax3d-hfr,imax-hfr"
+                  }
+                ],
+                "theatreDetails": [
+                  {
+                    "contentID": 254851,
+                    "definitionName": "GlobalElementsShowtimesTheatreDetails",
+                    "title": "View theatre details",
+                    "movieDetails": [
+                      {
+                        "contentID": 254852,
+                        "definitionName": "GlobalElementsShowTimesMovieDetails",
+                        "lengthLabel": "length",
+                        "ratingsLabel": "ratings",
+                        "ratingsSubHeading": "Ratings & Warnings",
+                        "genreLabel": "genre",
+                        "trailerLabel": "Watch trailer",
+                        "posterNotFoundImage": "https://mediafiles.cineplex.com/cineplex-v2/global-elements/posterNotFoundImage.png",
+                        "soldOutLabel": "Sold Out",
+                        "posterAriaLabel": "View movie details for ",
+                        "noPasses": "No passes",
+                        "communityDayWarning": "Tickets are available in-theatre only"
+                      }
+                    ],
+                    "noAvailableShowTimeMessage": "There are no showtimes at this date. Please update the date to see results."
+                  }
+                ],
+                "filterButtonLabel": "Filters",
+                "filterRemovedAriaLabel": "Filter removed ",
+                "showtimeErrors": [
+                  {
+                    "contentID": 284578,
+                    "definitionName": "ShowtimeError",
+                    "reference": "NoShowtimesToday",
+                    "heading": "No showtimes today?",
+                    "body": "No worries, we've got you! Jump to the first available showtime.",
+                    "primaryCta": "Go to [date]"
+                  },
+                  {
+                    "contentID": 285057,
+                    "definitionName": "ShowtimeError",
+                    "reference": "NoShowtimesAvailable",
+                    "heading": "Sorry, no showtimes found",
+                    "body": "Try changing the date, location or filters."
+                  }
+                ],
+                "fixedFilterIds": [
+                  {
+                    "contentID": 298901,
+                    "definitionName": "Generic Text Field",
+                    "label": "regular"
+                  },
+                  {
+                    "contentID": 298898,
+                    "definitionName": "Generic Text Field",
+                    "label": "vip"
+                  },
+                  {
+                    "contentID": 298900,
+                    "definitionName": "Generic Text Field",
+                    "label": "imax"
+                  },
+                  {
+                    "contentID": 298899,
+                    "definitionName": "Generic Text Field",
+                    "label": "recliner"
+                  },
+                  {
+                    "contentID": 298902,
+                    "definitionName": "Generic Text Field",
+                    "label": "avx"
+                  }
+                ],
+                "seeMoreTheatresTitle": "Explore other locations",
+                "seeMoreTheatresDescription": "Not seeing what you're looking for?",
+                "seeMoreTheatresCTALabel": "See more theatres"
+              }
+            ],
+            "searchDrawerContent": [
+              {
+                "contentID": 254733,
+                "definitionName": "SearchDrawerContent",
+                "heading": "Search",
+                "inputPlaceholder": "Search",
+                "inTheatresGroup": "In Theatres",
+                "rentBuyGroup": "Watch at Home",
+                "searchUrl": "/search",
+                "ariaLive": "{number} results are available. Keyboard users, use up and down arrows to review and enter to select. Touch device users, explore by touch or with swipe gestures.",
+                "autocompleteInstructions": "When autocomplete results are available use up and down arrows to review and enter to select.  Touch device users, explore by touch or with swipe gestures.",
+                "inEventTheatresGroup": "Event Cinema",
+                "advanceTicketLabel": "Advance Tickets",
+                "comingSoonLabel": "Coming Soon",
+                "filterPlaceholder": "Search movies",
+                "filterClearButtonAriaLabel": "Clear search input",
+                "errorMessage": "Error loading movies",
+                "noMatchingFilterMessage": "No matching movies found"
+              }
+            ],
+            "accountDrawerContent": [
+              {
+                "contentID": 254778,
+                "definitionName": "AccountDrawerContent",
+                "title": "Account",
+                "logIn": "LOGIN",
+                "logOut": "LOG OUT",
+                "signUpCallout": "Don't have an account?",
+                "signUpCta": "Create one.",
+                "sceneBannerTitle": "Get Rewarded!",
+                "sceneBannerCopy": "Free movies, meals, and more!",
+                "sceneAccountBalance": "Scene+ Points",
+                "manageAccount": "Manage Cineplex Account",
+                "deepLinkingPrompt": "Continue ticket purchase for",
+                "remainingCineClubTickets": "[ticketsRemaining] Member ticket(s), [discountedTicketsPerShow] CineClub-Priced",
+                "cineClubSideMenu": [
+                  {
+                    "contentID": 254779,
+                    "definitionName": "AccountDrawerCineClubSideMenuContent",
+                    "heading": "CineClub",
+                    "text": "Ready to save big at Cineplex?",
+                    "bannerText": "Ready to save big at Cineplex?",
+                    "banner": "https://mediafiles.cineplex.com/cineclub/cineclub-account-drawer-banner.png",
+                    "url": "/cineclub?ic=cpx_metanav-en_cineclub",
+                    "hasTicketsText": "[ticketsRemaining] Monthly Member Ticket Credit(s) available",
+                    "noTicketsText": "Everyday Member-Priced Tickets available"
+                  }
+                ],
+                "sceneSideMenu": [
+                  {
+                    "contentID": 254780,
+                    "definitionName": "AccountDrawerSceneSideMenu",
+                    "heading": "Scene+",
+                    "text": "Free movies, meals and more",
+                    "banner": "https://mediafiles.cineplex.com/cineplex-v2/global-elements/scene_v2_account_widget_banner_en.png"
+                  }
+                ],
+                "manageSideMenu": [
+                  {
+                    "contentID": 254781,
+                    "definitionName": "AccountDrawerManageSideMenu",
+                    "heading": "Manage Account",
+                    "text": "Profile and payment settings"
+                  }
+                ],
+                "dealsAndOffersSideMenuLink": [
+                  {
+                    "contentID": 298938,
+                    "definitionName": "AccountDrawerCineClubSideMenuContent",
+                    "heading": "Deals",
+                    "text": "View  your exclusive offers",
+                    "bannerText": "Unlock exclusive Cineplex savings\u200b",
+                    "banner": "https://mediafiles.cineplex.com/deal-and-offers-en.png",
+                    "url": "/deals"
+                  }
+                ]
+              }
+            ],
+            "showtimeExperiences": [
+              {
+                "contentID": 254620,
+                "definitionName": "ShowtimeExperience",
+                "name": "UltraAVX",
+                "vistaAttribute": "AVX",
+                "description": "More screen, more sound, more epic\u2014 it\u2019s ultra for a reason. With superior picture quality, stunningly crisp detail, and Dolby surround sound, UltraAVX offers an upgraded theatre experience that allows you to immerse yourself in the action, sci-fi and fantasy in front of you from a comfy leather seat. ",
+                "badgeImage": {
+                  "label": null,
+                  "url": "https://mediafiles.cineplex.com/cineplex-v2/experience-badges/ultraavx.svg",
+                  "target": null,
+                  "filesize": 1914,
+                  "pixelHeight": "0",
+                  "pixelWidth": "0"
+                },
+                "ariaLabel": "Ultra AVX"
+              },
+              {
+                "contentID": 254622,
+                "definitionName": "ShowtimeExperience",
+                "name": "VIP 18+",
+                "vistaAttribute": "VIP18+",
+                "description": "Give dinner and a movie a whole new meaning with a premium experience. Get specialty food and signature cocktails delivered right to your seat in an adults-only auditorium. ",
+                "badgeImage": {
+                  "label": null,
+                  "url": "https://mediafiles.cineplex.com/cineplex-v2/experience-badges/vip18plus.svg",
+                  "target": null,
+                  "filesize": 1787,
+                  "pixelHeight": "0",
+                  "pixelWidth": "0"
+                },
+                "ariaLabel": "VIP 18+"
+              },
+              {
+                "contentID": 254627,
+                "definitionName": "ShowtimeExperience",
+                "name": "VIP 19+",
+                "vistaAttribute": "VIP19+",
+                "description": "Give dinner and a movie a whole new meaning with a premium experience. Get specialty food and signature cocktails delivered right to your seat in an adults-only auditorium. ",
+                "badgeImage": {
+                  "label": null,
+                  "url": "https://mediafiles.cineplex.com/cineplex-v2/experience-badges/vip19plus.svg",
+                  "target": null,
+                  "filesize": 1495,
+                  "pixelHeight": "0",
+                  "pixelWidth": "0"
+                },
+                "ariaLabel": "VIP 19+"
+              },
+              {
+                "contentID": 254628,
+                "definitionName": "ShowtimeExperience",
+                "name": "IMAX",
+                "vistaAttribute": "IMAX",
+                "description": "From heart-pounding audio to crystal clear imagery on the largest screens, IMAX offers the world\u2019s most immersive movie experience. ",
+                "badgeImage": {
+                  "label": null,
+                  "url": "https://mediafiles.cineplex.com/cineplex-v2/experience-badges/imax.svg",
+                  "target": null,
+                  "filesize": 2406,
+                  "pixelHeight": "0",
+                  "pixelWidth": "0"
+                },
+                "ariaLabel": "IMAX"
+              },
+              {
+                "contentID": 254630,
+                "definitionName": "ShowtimeExperience",
+                "name": "4DX",
+                "vistaAttribute": "4DX",
+                "description": "4DX offers a one-of-a-kind, multi-sensory cinematic experience that immerses you in the action on screen by synchronizing motion seats with environmental effects like water, wind, lightning, scent, and more. ",
+                "badgeImage": {
+                  "label": null,
+                  "url": "https://mediafiles.cineplex.com/cineplex-v2/experience-badges/4dx.svg",
+                  "target": null,
+                  "filesize": 2089,
+                  "pixelHeight": "0",
+                  "pixelWidth": "0"
+                },
+                "ariaLabel": "4DX"
+              },
+              {
+                "contentID": 254631,
+                "definitionName": "ShowtimeExperience",
+                "name": "ScreenX",
+                "vistaAttribute": "SCREENX",
+                "description": "ScreenX expands your movie experience with an expansive, 270-degree panoramic screen in select scenes that naturally fills your peripheral vision and surrounds you with boundless adventure.",
+                "badgeImage": {
+                  "label": null,
+                  "url": "https://mediafiles.cineplex.com/cineplex-v2/experience-badges/ScreenX_EN.svg",
+                  "target": null,
+                  "filesize": 3596,
+                  "pixelHeight": "0",
+                  "pixelWidth": "0"
+                },
+                "ariaLabel": "ScreenX"
+              },
+              {
+                "contentID": 254632,
+                "definitionName": "ShowtimeExperience",
+                "name": "Clubhouse",
+                "vistaAttribute": "Clubhouse",
+                "description": "Enjoy playtime before showtime. Kids can explore our safe and fun indoor playground while you sit and watch from your seats.\u202f",
+                "badgeImage": {
+                  "label": null,
+                  "url": "https://mediafiles.cineplex.com/cineplex-v2/experience-badges/clubhouse.svg",
+                  "target": null,
+                  "filesize": 21207,
+                  "pixelHeight": "0",
+                  "pixelWidth": "0"
+                },
+                "ariaLabel": "Clubhouse"
+              },
+              {
+                "contentID": 254633,
+                "definitionName": "ShowtimeExperience",
+                "name": "World Gaming Fan Expo",
+                "vistaAttribute": "World Gaming Fan Expo",
+                "badgeImage": {
+                  "label": null,
+                  "url": "https://mediafiles.cineplex.com/cineplex-v2/experience-badges/fanexperience.svg",
+                  "target": null,
+                  "filesize": 2260,
+                  "pixelHeight": "0",
+                  "pixelWidth": "0"
+                },
+                "ariaLabel": "World Gaming Fan Expo"
+              },
+              {
+                "contentID": 254634,
+                "definitionName": "ShowtimeExperience",
+                "name": "World Gaming Event Pass",
+                "vistaAttribute": "World Gaming Event Pass",
+                "badgeImage": {
+                  "label": null,
+                  "url": "https://mediafiles.cineplex.com/cineplex-v2/experience-badges/eventpass.svg",
+                  "target": null,
+                  "filesize": 2934,
+                  "pixelHeight": "0",
+                  "pixelWidth": "0"
+                },
+                "ariaLabel": "World Gaming Event Pass"
+              },
+              {
+                "contentID": 254635,
+                "definitionName": "ShowtimeExperience",
+                "name": "3D",
+                "vistaAttribute": "3D",
+                "description": "Watch your movie come to life in RealD 3D! Enjoy a premium large format movie theatre designed with cutting-edge cinema technologies.",
+                "badgeImage": {
+                  "label": null,
+                  "url": "https://mediafiles.cineplex.com/cineplex-v2/experience-badges/3d.svg",
+                  "target": null,
+                  "filesize": 856,
+                  "pixelHeight": "0",
+                  "pixelWidth": "0"
+                },
+                "ariaLabel": "3D"
+              },
+              {
+                "contentID": 254636,
+                "definitionName": "ShowtimeExperience",
+                "name": "D-BOX",
+                "vistaAttribute": "D-BOX",
+                "description": "D-BOX seating brings movies to life through an extremely realistic & immersive combination of movements and vibrations that are perfectly synchronized to the action on-screen. ",
+                "badgeImage": {
+                  "label": null,
+                  "url": "https://mediafiles.cineplex.com/cineplex-v2/experience-badges/dbox.svg",
+                  "target": null,
+                  "filesize": 2571,
+                  "pixelHeight": "0",
+                  "pixelWidth": "0"
+                },
+                "ariaLabel": "D-BOX"
+              },
+              {
+                "contentID": 254637,
+                "definitionName": "ShowtimeExperience",
+                "name": "Prime Seats",
+                "vistaAttribute": "PRIME",
+                "description": "Reserve a Prime Seat in select traditional auditoriums, and enjoy a larger seat in a reserved row.",
+                "badgeImage": {
+                  "label": null,
+                  "url": "https://mediafiles.cineplex.com/cineplex-v2/experience-badges/primeseats.svg",
+                  "target": null,
+                  "filesize": 7053,
+                  "pixelHeight": "0",
+                  "pixelWidth": "0"
+                },
+                "ariaLabel": "Prime Seats"
+              },
+              {
+                "contentID": 254638,
+                "definitionName": "ShowtimeExperience",
+                "name": "Recliner",
+                "vistaAttribute": "RECLINER",
+                "description": "Sit back. Like, waaaay back. Enjoy the movie from a luxurious, fully reclining leather chair with plenty of legroom and space between each row.",
+                "badgeImage": {
+                  "label": null,
+                  "url": "https://mediafiles.cineplex.com/cineplex-v2/experience-badges/recl.svg",
+                  "target": null,
+                  "filesize": 2360,
+                  "pixelHeight": "0",
+                  "pixelWidth": "0"
+                },
+                "ariaLabel": "Recliner"
+              },
+              {
+                "contentID": 254639,
+                "definitionName": "ShowtimeExperience",
+                "name": "High Frame Rate",
+                "vistaAttribute": "HFR",
+                "description": "High Frame Rate (HFR) movies are created with more than the standard 24 frames per second, delivering a smoother and more realistic visual experience. ",
+                "badgeImage": {
+                  "label": null,
+                  "url": "https://mediafiles.cineplex.com/cineplex-v2/experience-badges/hfr.svg",
+                  "target": null,
+                  "filesize": 641,
+                  "pixelHeight": "0",
+                  "pixelWidth": "0"
+                },
+                "ariaLabel": "High Frame Rate"
+              },
+              {
+                "contentID": 254640,
+                "definitionName": "ShowtimeExperience",
+                "name": "70mm",
+                "vistaAttribute": "70MM",
+                "description": "70mm projection offers a much crisper, more uniform image with 3 times the resolution of standard digital formats. Projecting the film in its native format provides a wider image and exceptional level of detail, resulting in an immersive and unparalleled cinematic experience. ",
+                "badgeImage": {
+                  "label": null,
+                  "url": "https://mediafiles.cineplex.com/cineplex-v2/experience-badges/70mm.svg",
+                  "target": null,
+                  "filesize": 863,
+                  "pixelHeight": "0",
+                  "pixelWidth": "0"
+                },
+                "ariaLabel": "70mm"
+              },
+              {
+                "contentID": 254641,
+                "definitionName": "ShowtimeExperience",
+                "name": "Stars & Strollers Test",
+                "vistaAttribute": "S&S Test",
+                "description": "Watch a new release movie with baby in tow! We\u2019ve got you both covered in a baby-friendly movie environment with lowered volume, dimmed lighting, and change tables.",
+                "badgeImage": {
+                  "label": null,
+                  "url": "https://mediafiles.cineplex.com/cineplex-v2/experience-badges/starsandstrollers.svg",
+                  "target": null,
+                  "filesize": 7261,
+                  "pixelHeight": "0",
+                  "pixelWidth": "0"
+                },
+                "ariaLabel": "Stars & Strollers"
+              },
+              {
+                "contentID": 254642,
+                "definitionName": "ShowtimeExperience",
+                "name": "Sensory Friendly",
+                "vistaAttribute": "SF",
+                "description": "Sensory Friendly Screenings provide a lights up, sound down environment for individuals with autism spectrum disorder and others to enjoy.\u202f",
+                "badgeImage": {
+                  "label": null,
+                  "url": "https://mediafiles.cineplex.com/cineplex-v2/experience-badges/sensoryfriendlyscreening.svg",
+                  "target": null,
+                  "filesize": 3922,
+                  "pixelHeight": "0",
+                  "pixelWidth": "0"
+                },
+                "ariaLabel": "Sensory Friendly"
+              },
+              {
+                "contentID": 254643,
+                "definitionName": "ShowtimeExperience",
+                "name": "Dolby Atmos",
+                "vistaAttribute": "ATMOS",
+                "description": "Dolby\u00ae introduces a dramatic new listening experience to movie-goers by precisely positioning and moving sounds anywhere in the theatre. Dolby Atmos mimics the way sound behaves in real life, heightening the realism and impact of every scene. ",
+                "badgeImage": {
+                  "label": null,
+                  "url": "https://mediafiles.cineplex.com/cineplex-v2/experience-badges/DolbyAtmosLogo.svg",
+                  "target": null,
+                  "filesize": 4455,
+                  "pixelHeight": "0",
+                  "pixelWidth": "0"
+                },
+                "ariaLabel": "Dolby Atmos"
+              },
+              {
+                "contentID": 254644,
+                "definitionName": "ShowtimeExperience",
+                "name": "Regular",
+                "vistaAttribute": "REGULAR",
+                "description": "A classic movie-going experience: big screen, big sound, and reserved seating.",
+                "badgeImage": {
+                  "label": null,
+                  "url": "https://mediafiles.cineplex.com/cineplex-v2/experience-badges/regular.svg",
+                  "target": null,
+                  "filesize": 1940,
+                  "pixelHeight": "0",
+                  "pixelWidth": "0"
+                },
+                "ariaLabel": "Regular"
+              },
+              {
+                "contentID": 254645,
+                "definitionName": "ShowtimeExperience",
+                "name": "Last Chance",
+                "vistaAttribute": "LASTCHNC",
+                "badgeImage": {
+                  "label": null,
+                  "url": "https://mediafiles.cineplex.com/cineplex-v2/experience-badges/lastchance.svg",
+                  "target": null,
+                  "filesize": 2575,
+                  "pixelHeight": "0",
+                  "pixelWidth": "0"
+                },
+                "ariaLabel": "Last Chance"
+              },
+              {
+                "contentID": 256731,
+                "definitionName": "ShowtimeExperience",
+                "name": "EVENT",
+                "vistaAttribute": "EVENT",
+                "description": "Enjoy your favourite movie in the state of the art theatre with modern comfortable seating, cupholders and plenty of legroom.",
+                "badgeImage": {
+                  "label": null,
+                  "url": "https://mediafiles.cineplex.com/cineplex-v2/experience-badges/regular.svg",
+                  "target": null,
+                  "filesize": 1940,
+                  "pixelHeight": "0",
+                  "pixelWidth": "0"
+                },
+                "ariaLabel": "Regular"
+              },
+              {
+                "contentID": 256814,
+                "definitionName": "ShowtimeExperience",
+                "name": "Stars & Strollers",
+                "vistaAttribute": "S&S",
+                "description": "Parents\u2014bring naptime to showtime. Watch the latest new releases in a baby-friendly environment with soft lighting, reduced volume, and other amenities.\u202f",
+                "badgeImage": {
+                  "label": null,
+                  "url": "https://mediafiles.cineplex.com/cineplex-v2/experience-badges/starsandstrollers.svg",
+                  "target": null,
+                  "filesize": 7261,
+                  "pixelHeight": "0",
+                  "pixelWidth": "0"
+                },
+                "ariaLabel": "Stars & Strollers"
+              },
+              {
+                "contentID": 270248,
+                "definitionName": "ShowtimeExperience",
+                "name": "IMAX 3D",
+                "vistaAttribute": "IMAX_3D",
+                "description": "The size and curvature of the IMAX screen allows for a larger and more immersive image to be experienced in IMAX\u00ae 3D - the images jump off the screen and into your lap. ",
+                "badgeImage": {
+                  "label": null,
+                  "url": "https://mediafiles.cineplex.com/cineplex-v2/experience-badges/imax3d_20230421134101_0.svg",
+                  "target": null,
+                  "filesize": 3690,
+                  "pixelHeight": "0",
+                  "pixelWidth": "0"
+                },
+                "ariaLabel": "IMAX 3D"
+              },
+              {
+                "contentID": 274504,
+                "definitionName": "ShowtimeExperience",
+                "name": "Laser Projection",
+                "vistaAttribute": "LASER",
+                "description": "Experience the brightest picture and a wide range of rich, dynamic colours with laser projection.",
+                "badgeImage": {
+                  "label": null,
+                  "url": "https://mediafiles.cineplex.com/cineplex-v2/experience-badges/LaserProjection_20240109162159_0.svg",
+                  "target": null,
+                  "filesize": 4560,
+                  "pixelHeight": "0",
+                  "pixelWidth": "0"
+                }
+              },
+              {
+                "contentID": 285435,
+                "definitionName": "ShowtimeExperience",
+                "name": "Early Access",
+                "vistaAttribute": "EA",
+                "badgeImage": {
+                  "label": "early access",
+                  "url": "https://mediafiles.cineplex.com/cineplex-v2/experience-badges/earlyaccess_en.svg",
+                  "target": null,
+                  "filesize": 3317,
+                  "pixelHeight": "0",
+                  "pixelWidth": "0"
+                },
+                "ariaLabel": "early access"
+              },
+              {
+                "contentID": 287764,
+                "definitionName": "ShowtimeExperience",
+                "name": "HDR by Barco",
+                "vistaAttribute": "HDR",
+                "description": "Enhance your UltraAVX experience with the magic of HDR by Barco. Step into a world of unrivaled cinematic beauty where colours come alive with stunning vibrancy, brightness reaches new heights, and clarity astounds at every turn.",
+                "badgeImage": {
+                  "label": null,
+                  "url": "https://mediafiles.cineplex.com/cineplex-v2/experience-badges/UltraAVX-HDR-by-Barco-new.svg",
+                  "target": null,
+                  "filesize": 8783,
+                  "pixelHeight": "0",
+                  "pixelWidth": "0"
+                },
+                "ariaLabel": "HDR by Barco"
+              },
+              {
+                "contentID": 311386,
+                "definitionName": "ShowtimeExperience",
+                "name": "IMAX HFR",
+                "vistaAttribute": "IMAX_HFR",
+                "description": "From heart-pounding audio to crystal clear imagery on the largest screens, IMAX offers the world\u2019s most immersive movie experience. ",
+                "badgeImage": {
+                  "label": null,
+                  "url": "https://mediafiles.cineplex.com/cineplex-v2/experience-badges/imax-hfr.svg",
+                  "target": null,
+                  "filesize": 3037,
+                  "pixelHeight": "0",
+                  "pixelWidth": "0"
+                }
+              },
+              {
+                "contentID": 311387,
+                "definitionName": "ShowtimeExperience",
+                "name": "IMAX 3D HFR",
+                "vistaAttribute": "IMAX_3D_HFR",
+                "description": "From heart-pounding audio to crystal clear imagery on the largest screens, IMAX offers the world\u2019s most immersive movie experience. ",
+                "badgeImage": {
+                  "label": null,
+                  "url": "https://mediafiles.cineplex.com/cineplex-v2/experience-badges/imax3d-hfr.svg",
+                  "target": null,
+                  "filesize": 4333,
+                  "pixelHeight": "0",
+                  "pixelWidth": "0"
+                }
+              },
+              {
+                "contentID": 311388,
+                "definitionName": "ShowtimeExperience",
+                "name": "IMAX 70MM",
+                "vistaAttribute": "IMAX_70MM",
+                "description": "Combining larger than life IMAX technology with the detail of IMAX 70MM film, this format is the highest quality imaging presentation ever devised. IMAX 70MM film offers nine times the resolution of standard 35mm film.",
+                "badgeImage": {
+                  "label": null,
+                  "url": "https://mediafiles.cineplex.com/cineplex-v2/experience-badges/imax-70mm.svg",
+                  "target": null,
+                  "filesize": 3260,
+                  "pixelHeight": "0",
+                  "pixelWidth": "0"
+                }
+              }
+            ],
+            "backButtonText": "Back",
+            "searchWidget": [
+              {
+                "contentID": 254447,
+                "definitionName": "GlobalElementsSearchWidget",
+                "heading": "Search",
+                "inputPlaceholder": "SEARCH"
+              }
+            ]
+          }
+        ],
+        "actionAriaLabels": [
+          {
+            "contentID": 259290,
+            "definitionName": "GlobalElementsHeaderActionAriaLabels",
+            "close": "Close the menu",
+            "expand": "Open the menu",
+            "collapse": "Collapse",
+            "toggleLanguage": "Toggle language to Fran\u00e7ais (FR)",
+            "home": "Cineplex Home"
+          }
+        ]
+      },
+      "footer": {
+        "contentID": 249875,
+        "definitionName": "GlobalElementsFooter",
+        "columns": [
+          {
+            "contentID": 249860,
+            "definitionName": "GlobalElementsFooterColumn",
+            "referenceName": "More At Cineplex (Cineplex.com)",
+            "label": "More At Cineplex",
+            "links": [
+              {
+                "contentID": 249718,
+                "definitionName": "GlobalElementsLink",
+                "link": {
+                  "href": "/giftcards/egiftcard?ic=cpx_footer",
+                  "target": "",
+                  "text": "E-Gift Cards"
+                }
+              },
+              {
+                "contentID": 249853,
+                "definitionName": "GlobalElementsLink",
+                "link": {
+                  "href": "https://cineplex.service-now.com/gsc?ic=cpx_footer",
+                  "target": "",
+                  "text": "Help Centre"
+                }
+              },
+              {
+                "contentID": 249854,
+                "definitionName": "GlobalElementsLink",
+                "link": {
+                  "href": "https://cineplex.wd3.myworkdayjobs.com/Cineplex?ic=cpx_footer",
+                  "target": "",
+                  "text": "Careers at Cineplex"
+                }
+              },
+              {
+                "contentID": 249858,
+                "definitionName": "GlobalElementsLink",
+                "link": {
+                  "href": "http://media.cineplex.com/?ic=cpx_footer",
+                  "target": "",
+                  "text": "Advertising Opportunities"
+                }
+              },
+              {
+                "contentID": 259028,
+                "definitionName": "GlobalElementsLink",
+                "link": {
+                  "href": "https://www.cineplex.com/giftcards?ic=cpx_footer-en_giftcard",
+                  "target": "_self",
+                  "text": "Gift Cards"
+                }
+              },
+              {
+                "contentID": 275795,
+                "definitionName": "GlobalElementsLink",
+                "link": {
+                  "href": "/app?ic=cpx_footer",
+                  "target": "",
+                  "text": "Download our App"
+                }
+              },
+              {
+                "contentID": 308498,
+                "definitionName": "GlobalElementsLink",
+                "link": {
+                  "href": "https://shop.cineplex.com/?utm_source=https://www.cineplex.com/&utm_medium=referral&utm_campaign=referral-footer&utm_term=&utm_content=",
+                  "target": "_blank",
+                  "text": "Merch Shop"
+                }
+              },
+              {
+                "contentID": 308919,
+                "definitionName": "GlobalElementsLink",
+                "link": {
+                  "href": "/global/scene",
+                  "target": "_blank",
+                  "text": "Scene+ Program"
+                }
+              }
+            ],
+            "links_ValueField": "249853,249854,249856,249858,249718,259028,249938,275795,308498,308919",
+            "links_TextField": "<a href=\"https://cineplex.service-now.com/gsc?ic=cpx_footer\" target=\"\">Help Centre</a>,<a href=\"https://cineplex.wd3.myworkdayjobs.com/Cineplex?ic=cpx_footer\" target=\"\">Careers at Cineplex</a>,<a href=\"http://www.winwithp1ag.com/?ic=cpx_footer-en_p1ag\" target=\"\">Player One Amusement Group</a>,<a href=\"http://media.cineplex.com/?ic=cpx_footer\" target=\"\">Advertising Opportunities</a>,<a href=\"~/giftcards/egiftcard?ic=cpx_footer\" target=\"\">E-Gift Cards</a>,<a href=\"https://www.cineplex.com/giftcards?ic=cpx_footer-en_giftcard\" target=\"_self\">Gift Cards</a>,<a href=\"~/OpenCommunicationCentre\" target=\"\">Email Newsletter Sign-Up</a>,<a href=\"~/app?ic=cpx_footer\" target=\"\">Download our App</a>,<a href=\"https://shop.cineplex.com/?utm_source=https://www.cineplex.com/&utm_medium=referral&utm_campaign=referral-footer&utm_term=&utm_content=\" target=\"\">Merch Shop</a>,<a href=\"~/global/scene\" target=\"_blank\">Scene+ Program</a>"
+          },
+          {
+            "contentID": 249852,
+            "definitionName": "GlobalElementsFooterColumn",
+            "referenceName": "Corporate Information (Cineplex.com)",
+            "label": "Corporate Information",
+            "links": [
+              {
+                "contentID": 249803,
+                "definitionName": "GlobalElementsLink",
+                "link": {
+                  "href": "https://corporateorders.cineplex.com/?ic=cpx_footer",
+                  "target": "",
+                  "text": "Corporate Products"
+                }
+              },
+              {
+                "contentID": 249847,
+                "definitionName": "GlobalElementsLink",
+                "link": {
+                  "href": "https://www.cineplex.com/parties-and-groups?ic=cpx_footer",
+                  "target": "",
+                  "text": "Corporate Sales & Rentals"
+                }
+              },
+              {
+                "contentID": 249848,
+                "definitionName": "GlobalElementsLink",
+                "link": {
+                  "href": "https://corp.cineplex.com/?ic=cpx_footer",
+                  "target": "",
+                  "text": "Corporate Information"
+                }
+              },
+              {
+                "contentID": 249849,
+                "definitionName": "GlobalElementsLink",
+                "link": {
+                  "href": "https://corp.cineplex.com/news?ic=cpx_footer",
+                  "target": "",
+                  "text": "Press Room"
+                }
+              },
+              {
+                "contentID": 249850,
+                "definitionName": "GlobalElementsLink",
+                "link": {
+                  "href": "https://corp.cineplex.com/investors?ic=cpx_footer",
+                  "target": "",
+                  "text": "Investor Relations"
+                }
+              }
+            ],
+            "links_ValueField": "249847,249848,249849,249850,249803,252377",
+            "links_TextField": "&lt;a href=\"https://www.cineplex.com/parties-and-groups?ic=cpx_footer-en_corpsalesrentals\" target=\"\"&gt;Corporate Sales &amp; Rentals&lt;/a&gt;,&lt;a href=\"https://corp.cineplex.com/?ic=cpx_footer-en_corpinfo\" target=\"\"&gt;Corporate Information&lt;/a&gt;,&lt;a href=\"https://corp.cineplex.com/news?ic=cpx_footer-en_pressroom\" target=\"\"&gt;Press Room&lt;/a&gt;,&lt;a href=\"https://corp.cineplex.com/investors?ic=cpx_footer-en_ir\" target=\"\"&gt;Investor Relations&lt;/a&gt;,&lt;a href=\"https://corporateorders.cineplex.com/?ic=cpx_footer-en_corpproducts\" target=\"\"&gt;Corporate Products&lt;/a&gt;,&lt;a href=\"~/groupevents/fundraising?ic=cpx_global-nav-en_fundraising\" target=\"\"&gt;Fundraising&lt;/a&gt;"
+          },
+          {
+            "contentID": 249870,
+            "definitionName": "GlobalElementsFooterColumn",
+            "referenceName": "Theatre Information (Cineplex.com)",
+            "label": "Theatre Information",
+            "links": [
+              {
+                "contentID": 249861,
+                "definitionName": "GlobalElementsLink",
+                "link": {
+                  "href": "/?theatresNearYou=true&ic=cpx_footer",
+                  "target": "",
+                  "text": "Find a Theatre"
+                }
+              },
+              {
+                "contentID": 249862,
+                "definitionName": "GlobalElementsLink",
+                "link": {
+                  "href": "/en/theatres/food-and-drinks?ic=cpx_footer",
+                  "target": "",
+                  "text": "Food and Drink"
+                }
+              },
+              {
+                "contentID": 249863,
+                "definitionName": "GlobalElementsLink",
+                "link": {
+                  "href": "/parties-and-groups/parties?ic=cpx_footer",
+                  "target": "",
+                  "text": "Book a party"
+                }
+              },
+              {
+                "contentID": 249864,
+                "definitionName": "GlobalElementsLink",
+                "link": {
+                  "href": "/experiences/stars-and-strollers?ic=cpx_footer",
+                  "target": "",
+                  "text": "Stars and Strollers"
+                }
+              },
+              {
+                "contentID": 249865,
+                "definitionName": "GlobalElementsLink",
+                "link": {
+                  "href": "/theatres/accessibility?ic=cpx_footer",
+                  "target": "",
+                  "text": "Accessibility"
+                }
+              },
+              {
+                "contentID": 249866,
+                "definitionName": "GlobalElementsLink",
+                "link": {
+                  "href": "https://access2card.ca/?ic=cpx_footer",
+                  "target": "",
+                  "text": "Access 2 Program"
+                }
+              },
+              {
+                "contentID": 249867,
+                "definitionName": "GlobalElementsLink",
+                "link": {
+                  "href": "https://www.cineplex.com/parties-and-groups/meetings?ic=cpx_footer",
+                  "target": "",
+                  "text": "Corporate Meetings & Screenings"
+                }
+              },
+              {
+                "contentID": 249868,
+                "definitionName": "GlobalElementsLink",
+                "link": {
+                  "href": "https://www.cineplex.com/parties-and-groups/screenings?ic=cpx_footer",
+                  "target": "",
+                  "text": "School Events & Screenings"
+                }
+              },
+              {
+                "contentID": 249869,
+                "definitionName": "GlobalElementsLink",
+                "link": {
+                  "href": "/policy/guest-code-of-conduct?ic=cpx_footer",
+                  "target": "_self",
+                  "text": "Guest Code of Conduct"
+                }
+              }
+            ],
+            "links_ValueField": "249861,249862,249863,249864,249865,249866,249867,249868,249869",
+            "links_TextField": "&lt;a href=\"~/Theatres/TheatreListings\" target=\"\"&gt;Find a Theatre&lt;/a&gt;,&lt;a href=\"~/Theatres/FoodAndDrink\" target=\"\"&gt;Food and Drink&lt;/a&gt;,&lt;a href=\"~/Theatres/Birthdays\" target=\"\"&gt;Book a party&lt;/a&gt;,&lt;a href=\"~/Theatres/StarsAndStrollers\" target=\"\"&gt;Stars and Strollers&lt;/a&gt;,&lt;a href=\"https://www.cineplex.com/Theatres/AccessibilityPolicy\" target=\"\"&gt;Accessibility Policy&lt;/a&gt;,&lt;a href=\"~/Theatres/Access2Entertainment\" target=\"\"&gt;Access 2 Program&lt;/a&gt;,&lt;a href=\"~/CorporateSales/CorporateEvents\" target=\"\"&gt;Corporate Meetings &amp; Screenings&lt;/a&gt;,&lt;a href=\"~/CorporateSales/GroupScreenings\" target=\"\"&gt;School Events &amp; Screenings&lt;/a&gt;,&lt;a href=\"https://mediafiles.cineplex.com/Footer/en/Guest_Code_of_Conduct_-_Cineplex_November_2020_FINAL.pdf\" target=\"_blank\"&gt;Guest Code of Conduct&lt;/a&gt;"
+          }
+        ],
+        "colu_ValueField": "249860,249852,249870",
+        "faqs": [
+          {
+            "contentID": 249871,
+            "definitionName": "GlobalElementsLink",
+            "link": {
+              "href": "https://corp.cineplex.com/investors/investor-data?cmpid=FooterEN_tsx-cgx",
+              "target": "",
+              "text": "TSX:CGX"
+            }
+          },
+          {
+            "contentID": 249872,
+            "definitionName": "GlobalElementsLink",
+            "link": {
+              "href": "/policy/privacy-policy?cmpid=FooterEN_privacy-policy",
+              "target": "",
+              "text": "Privacy Policy"
+            }
+          },
+          {
+            "contentID": 249873,
+            "definitionName": "GlobalElementsLink",
+            "link": {
+              "href": "/policy/terms-of-use?cmpid=FooterEN_terms-of-use",
+              "target": "",
+              "text": "Terms of Use"
+            }
+          }
+        ],
+        "faqs_ValueField": "249871,249872,249873",
+        "faqsTextField": "&lt;a href=\"http://investorrelations.cineplex.com/?cmpid=FooterEN_tsx-cgx\" target=\"\"&gt;TSX:CGX&lt;/a&gt;,&lt;a href=\"~/Global/PrivacyPolicy?cmpid=FooterEN_privacy-policy\" target=\"\"&gt;Privacy Policy&lt;/a&gt;,&lt;a href=\"~/Global/TermsOfUse?cmpid=FooterEN_terms-of-use\" target=\"\"&gt;Terms of Use&lt;/a&gt;",
+        "accessibilityUrl": {
+          "href": "",
+          "target": "_blank",
+          "text": ""
+        }
+      }
+    },
+    "__N_SSG": true
+  },
+  "page": "/404",
+  "query": {},
+  "buildId": "6bzv0_Kg_dsOq69kLjNJ4",
+  "assetPrefix": "https://www.cineplex.com/next-static-files",
+  "isFallback": false,
+  "isExperimentalCompile": false,
+  "gsp": true,
+  "locale": "en",
+  "locales": [
+    "en",
+    "fr",
+    "en-Mobile",
+    "fr-Mobile"
+  ],
+  "defaultLocale": "en",
+  "scriptLoader": []
+}

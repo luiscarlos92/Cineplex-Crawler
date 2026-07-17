@@ -1,0 +1,21 @@
+.env
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+*.egg-info/
+build/
+dist/
+
+# Generated crawler output and per-run reports
+output/
+documentation/run_reports/
+documentation/run_report.json
+
+# Local editor and OS files
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

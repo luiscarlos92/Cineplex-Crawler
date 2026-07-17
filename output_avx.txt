@@ -1,0 +1,5 @@
+620,"definitionName":"ShowtimeExperience","name":"UltraAVX","vistaAttribute":"AVX","description":"More scree
+tunningly crisp detail, and Dolby surround sound, UltraAVX offers an upgraded theatre experience that allows
+afiles.cineplex.com/cineplex-v2/experience-badges/ultraavx.svg","target":null,"filesize":1914,"pixelHeight":
+vistaAttribute":"HDR","description":"Enhance your UltraAVX experience with the magic of HDR by Barco. Step i
+afiles.cineplex.com/cineplex-v2/experience-badges/UltraAVX-HDR-by-Barco-new.svg","target":null,"filesize":87

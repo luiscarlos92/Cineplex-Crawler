@@ -1,0 +1,50 @@
+# Development plan and current status
+
+## Development plan
+
+1. Keep the live-site probe as the first validation step.
+2. Preserve the documented workflow in the repository so the browser flow is clear and repeatable.
+3. Continue implementing the automation steps in the same order requested by the user:
+   - open the homepage
+   - navigate to tickets
+   - discover and select movies
+   - collect and filter theaters by distance
+   - collect and apply experiences
+   - collect dates and loop through them
+   - iterate through preview seats and timeslots
+   - capture screenshots with a deterministic naming pattern
+4. Make the output directory configurable through .env.
+5. Keep the documentation folder updated as evidence and screenshots are gathered.
+
+## Current status
+
+### Completed
+- The workspace now contains a documentation-focused workflow runbook.
+- The repository includes a live homepage probe script.
+- The crawler module contains helper functions for configuration, filtering, URL generation, and output handling.
+- Regression tests are present for the core helper logic.
+- A .env file has been created with baseline configuration values.
+- Screenshot evidence has been preserved under the documentation screenshots folder.
+- Repository safety scaffolding is now present: `.gitignore`, `.env.example`, dependency metadata, and a setup README.
+- Generated output and run reports have dedicated ignored locations; hand-written workflow documentation must never be overwritten by a crawler run.
+- Configuration is validated and resolved relative to the repository; environment variables override `.env`, and geolocation requires a complete latitude/longitude pair.
+- Movie, theatre, experience, and date discovery now use scoped live Tickets controls and structured Cineplex test IDs.
+- Theatre options include live IDs, cities, and distances and are filtered by the configured maximum distance.
+- Terminal selections and optional command-line selections are implemented, including explicit `any` experiences and `all` dates.
+- The nested date → preview group → overlay timeslot loop is implemented with deterministic collision-safe screenshot names.
+- Every execution writes a timestamped JSON report without modifying the hand-written workflow notes.
+- A bounded live run captured and visually verified two different timeslots from the same `UltraAVX + D-BOX` preview group.
+- The deterministic regression suite covers configuration, normalization, parsing, naming, collision handling, and selection matching; a live smoke test is opt-in.
+
+### In progress
+- A fully unbounded all-dates run has intentionally not been launched during development because it may create many screenshots. The bounded live runs prove the same traversal and timeslot-switching path.
+- The local development configuration uses central Toronto coordinates, matching the saved workflow evidence; `.env.example` documents how to change them.
+
+### Known constraints
+- The live site structure may change and may require selectors to be adjusted.
+- Movie, theatre, experience, and date availability is dynamic and depends on Cineplex, the configured location, and the current time.
+- Cineplex injects its consent layer asynchronously; the crawler handles the current OneTrust implementation at initial navigation and after Tickets opens.
+- A failed preview group currently stops the run after recording the failure, avoiding uncertain browser-state recovery and accidental traversal of the wrong session.
+
+## Next recommended step
+Run the crawler interactively with the desired real selections. Start with `--max-screenshots 2` for a bounded confirmation, then remove the limit when the output and selection set are correct.
