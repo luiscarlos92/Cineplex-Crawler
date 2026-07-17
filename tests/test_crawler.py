@@ -1,3 +1,4 @@
+import asyncio
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -239,3 +240,56 @@ def test_interactive_filter_moves_matches_and_leftovers(monkeypatch, tmp_path):
     assert (run_dir / "discarded" / "second.png").is_file()
     assert captures[0]["filter_status"] == "filtered"
     assert captures[1]["filter_status"] == "discarded"
+
+
+class _FakeLoaderLocator:
+    def __init__(self, visibility):
+        self.visibility = iter(visibility)
+        self.last = False
+        self.calls = 0
+
+    async def evaluate_all(self, _script):
+        self.calls += 1
+        self.last = next(self.visibility, self.last)
+        return self.last
+
+
+class _FakeLoaderPage:
+    def __init__(self, visibility):
+        self.loader = _FakeLoaderLocator(visibility)
+
+    def locator(self, selector):
+        assert "popcorn-loader" in selector
+        return self.loader
+
+    async def wait_for_timeout(self, milliseconds):
+        await asyncio.sleep(milliseconds / 1000)
+
+
+def test_preview_loader_must_remain_hidden_before_capture():
+    page = _FakeLoaderPage([True, True, False, False, False])
+
+    asyncio.run(
+        crawler.wait_for_preview_loader(
+            page,
+            stable_hidden_ms=2,
+            timeout_ms=100,
+            poll_interval_ms=1,
+        )
+    )
+
+    assert page.loader.calls >= 4
+
+
+def test_preview_loader_timeout_fails_instead_of_capturing():
+    page = _FakeLoaderPage([True])
+
+    with pytest.raises(RuntimeError, match="popcorn seat-map loader"):
+        asyncio.run(
+            crawler.wait_for_preview_loader(
+                page,
+                stable_hidden_ms=2,
+                timeout_ms=5,
+                poll_interval_ms=1,
+            )
+        )

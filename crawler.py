@@ -875,6 +875,7 @@ async def collect_preview_groups(page: Page) -> list[PreviewGroup]:
 
 async def _wait_for_seat_map(page: Page) -> None:
     await page.get_by_test_id("movie-title").wait_for(state="visible", timeout=30_000)
+    await wait_for_preview_loader(page)
     seat = page.locator('[data-testid*="-seat-"]').first
     try:
         await seat.wait_for(state="attached", timeout=20_000)
@@ -882,8 +883,45 @@ async def _wait_for_seat_map(page: Page) -> None:
         # Some sold-out or accessibility-only auditoriums can legitimately have
         # no standard seat marker. The page title still proves the preview loaded.
         pass
-    await page.wait_for_timeout(350)
+    await page.wait_for_timeout(150)
     await hide_preview_obstructions(page)
+
+
+async def wait_for_preview_loader(
+    page: Page,
+    *,
+    stable_hidden_ms: int = 750,
+    timeout_ms: int = 30_000,
+    poll_interval_ms: int = 100,
+) -> None:
+    """Wait until Cineplex's popcorn loading overlay stays gone.
+
+    The previous seat SVG remains mounted while a new timeslot loads, so seat
+    presence is not sufficient proof that the preview is ready.
+    """
+    loader = page.locator('[aria-label="loading..."], img[src*="popcorn-loader" i]')
+    loop = asyncio.get_running_loop()
+    deadline = loop.time() + timeout_ms / 1000
+    hidden_since: float | None = None
+    while loop.time() < deadline:
+        is_visible = await loader.evaluate_all(
+            """elements => elements.some(element => {
+                const rect = element.getBoundingClientRect();
+                const style = getComputedStyle(element);
+                return rect.width > 0 && rect.height > 0 &&
+                    style.display !== 'none' && style.visibility !== 'hidden' &&
+                    Number(style.opacity || 1) > 0;
+            })"""
+        )
+        now = loop.time()
+        if is_visible:
+            hidden_since = None
+        elif hidden_since is None:
+            hidden_since = now
+        elif (now - hidden_since) * 1000 >= stable_hidden_ms:
+            return
+        await page.wait_for_timeout(poll_interval_ms)
+    raise RuntimeError("Cineplex's popcorn seat-map loader did not disappear before the capture timeout")
 
 
 async def hide_preview_obstructions(page: Page) -> bool:

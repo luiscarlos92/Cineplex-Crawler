@@ -125,6 +125,8 @@ Validation performed on July 16, 2026 (America/Toronto):
 - Before every screenshot, the crawler hides the action sheet's full-width wrapper using the stable `bottom-sheet` test ID.
 - The cleanup runs after entering each Preview Seats page and again after every timeslot switch because the live page may recreate the element during a rerender.
 - Only the obstructing action sheet is hidden; the movie details, timeslot controls, seat map, legend, and availability state remain unchanged.
+- Cineplex also displays a popcorn loading animation inside a full-page dimming overlay while a seat map changes.
+- The crawler requires the popcorn loader to remain absent continuously before reading seats or capturing the page. A stuck loader fails the capture instead of producing a darkened screenshot.
 
 ## Seat availability filtering
 

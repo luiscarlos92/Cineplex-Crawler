@@ -66,6 +66,11 @@ Immediately before each capture, the crawler hides Cineplex's fixed `Copy Link`
 / `Buy Tickets` action sheet so it does not cover the seat map. This cleanup is
 reapplied after every timeslot change.
 
+The crawler also waits for Cineplex's popcorn seat-map loader and its dimming
+overlay to remain absent before collecting seat data or taking a screenshot.
+If the loader does not clear before the timeout, that capture fails instead of
+saving an obstructed or stale image.
+
 ## Post-crawl filtering
 
 After a successful crawl, the crawler asks whether to continue with screenshot
