@@ -101,6 +101,7 @@ The following screenshots are already present in the workspace and should be tre
 ## Implementation decisions
 
 - The default user interaction is through consistent key-driven terminal menus: Up/Down navigates, Space toggles multi-select items, and Enter submits. Optional command-line selections support repeatable unattended runs, while redirected input retains a text fallback.
+- Interactive menus await Questionary on the crawler's existing asyncio loop. They must not call the synchronous prompt API, which would try to start a second event loop while Playwright is running.
 - Nearby-theatre results use an explicit browser geolocation when `LATITUDE` and `LONGITUDE` are configured; both must be set together.
 - The crawler stops at the seat-preview screen. It must not click `Buy Tickets`, select a seat, or enter checkout.
 - Hand-written files in `documentation/` are preserved. Each execution writes a separate machine-readable report under `documentation/run_reports/`.

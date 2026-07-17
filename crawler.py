@@ -308,14 +308,14 @@ def _console_menu_available() -> bool:
     )
 
 
-def _ask_console_question(question):
-    answer = question.ask()
+async def _ask_console_question(question):
+    answer = await question.ask_async()
     if answer is None:
         raise KeyboardInterrupt
     return answer
 
 
-def prompt_single_choice(options: Sequence[object], label: str, label_getter=str) -> object:
+async def prompt_single_choice(options: Sequence[object], label: str, label_getter=str) -> object:
     if not options:
         raise RuntimeError(f"No options were discovered for {label.lower()}")
     if _console_menu_available():
@@ -323,7 +323,7 @@ def prompt_single_choice(options: Sequence[object], label: str, label_getter=str
             questionary.Choice(title=str(label_getter(option)), value=option, shortcut_key=False)
             for option in options
         ]
-        return _ask_console_question(
+        return await _ask_console_question(
             questionary.select(
                 label,
                 choices=choices,
@@ -346,7 +346,7 @@ def prompt_single_choice(options: Sequence[object], label: str, label_getter=str
         print("Please enter one of the displayed numbers.")
 
 
-def prompt_multi_choice(
+async def prompt_multi_choice(
     options: Sequence[object],
     label: str,
     label_getter=str,
@@ -366,7 +366,7 @@ def prompt_multi_choice(
             else (lambda selected: bool(selected) or "Select at least one item.")
         )
         return list(
-            _ask_console_question(
+            await _ask_console_question(
                 questionary.checkbox(
                     label,
                     choices=choices,
@@ -444,12 +444,12 @@ def parse_row_selection(raw: str, available_rows: Sequence[str]) -> list[str]:
     return selected
 
 
-def prompt_row_selection(available_rows: Sequence[str], label: str) -> list[str]:
+async def prompt_row_selection(available_rows: Sequence[str], label: str) -> list[str]:
     if not available_rows:
         return []
     if _console_menu_available():
         return list(
-            _ask_console_question(
+            await _ask_console_question(
                 questionary.checkbox(
                     label,
                     choices=[
@@ -476,10 +476,10 @@ def prompt_row_selection(available_rows: Sequence[str], label: str) -> list[str]
             print(f"{exc}. Please use displayed row letters and ranges.")
 
 
-def prompt_yes_no(question: str, *, default: bool = False) -> bool:
+async def prompt_yes_no(question: str, *, default: bool = False) -> bool:
     if _console_menu_available():
         choices = ["Yes", "No"]
-        answer = _ask_console_question(
+        answer = await _ask_console_question(
             questionary.select(
                 question,
                 choices=choices,
@@ -506,7 +506,7 @@ def prompt_yes_no(question: str, *, default: bool = False) -> bool:
         print("Please answer yes or no.")
 
 
-def prompt_positive_int(question: str) -> int:
+async def prompt_positive_int(question: str) -> int:
     if _console_menu_available():
         choices = [
             questionary.Choice(
@@ -517,7 +517,7 @@ def prompt_positive_int(question: str) -> int:
             for count in range(1, 51)
         ]
         return int(
-            _ask_console_question(
+            await _ask_console_question(
                 questionary.select(
                     question,
                     choices=choices,
@@ -1199,14 +1199,14 @@ async def run_preview_loop(
     return captures, errors
 
 
-def filter_captures_interactively(
+async def filter_captures_interactively(
     run_dir: Path, captures: list[dict[str, object]]
 ) -> dict[str, object]:
     timeslot_choices = build_timeslot_choices(captures)
     if not timeslot_choices:
         return {"status": "skipped", "reason": "No captured sessions were available"}
 
-    selected_choices = prompt_multi_choice(
+    selected_choices = await prompt_multi_choice(
         timeslot_choices,
         "Select format/timeslot sessions to keep",
         lambda option: option.display_name,
@@ -1216,12 +1216,12 @@ def filter_captures_interactively(
         for choice in selected_choices
         for index in choice.capture_indexes
     }
-    ticket_count = prompt_positive_int("How many side-by-side tickets do you need?")
+    ticket_count = await prompt_positive_int("How many side-by-side tickets do you need?")
 
     layout_groups = build_layout_groups(captures, selected_indexes)
     selected_rows_by_layout: dict[tuple[str, str], set[str]] = {}
     for group in layout_groups:
-        selected_rows = prompt_row_selection(
+        selected_rows = await prompt_row_selection(
             group.rows,
             f"Select acceptable rows for {group.display_name}",
         )
@@ -1436,7 +1436,15 @@ async def run(args: argparse.Namespace) -> int:
             movie = (
                 _match_named_choice(args.movie, movies, lambda option: option.title)
                 if args.movie
-                else (movies[0] if args.dry_run else prompt_single_choice(movies, "Select a movie", lambda option: option.title))
+                else (
+                    movies[0]
+                    if args.dry_run
+                    else await prompt_single_choice(
+                        movies,
+                        "Select a movie",
+                        lambda option: option.title,
+                    )
+                )
             )
             assert isinstance(movie, MovieOption)
             await select_movie(page, movie)
@@ -1449,7 +1457,11 @@ async def run(args: argparse.Namespace) -> int:
                 else (
                     theatres[0]
                     if args.dry_run
-                    else prompt_single_choice(theatres, "Select a theatre", lambda option: option.display_name)
+                    else await prompt_single_choice(
+                        theatres,
+                        "Select a theatre",
+                        lambda option: option.display_name,
+                    )
                 )
             )
             assert isinstance(theatre, TheatreOption)
@@ -1482,7 +1494,7 @@ async def run(args: argparse.Namespace) -> int:
             elif args.dry_run:
                 selected_experiences = []
             else:
-                selected_experiences = prompt_multi_choice(
+                selected_experiences = await prompt_multi_choice(
                     experiences,
                     "Select experiences",
                     lambda option: option.label,
@@ -1502,7 +1514,11 @@ async def run(args: argparse.Namespace) -> int:
             elif args.dry_run:
                 selected_dates = dates[:1]
             else:
-                selected_dates = prompt_multi_choice(dates, "Select dates", lambda option: option.label)
+                selected_dates = await prompt_multi_choice(
+                    dates,
+                    "Select dates",
+                    lambda option: option.label,
+                )
             report["dates"] = [option.label for option in selected_dates]
 
             if args.dry_run:
@@ -1530,9 +1546,12 @@ async def run(args: argparse.Namespace) -> int:
                 if captures:
                     should_filter = args.filter
                     if should_filter is None:
-                        should_filter = prompt_yes_no("Continue with screenshot filtering?")
+                        should_filter = await prompt_yes_no("Continue with screenshot filtering?")
                     if should_filter:
-                        report["filtering"] = filter_captures_interactively(config.output_dir, captures)
+                        report["filtering"] = await filter_captures_interactively(
+                            config.output_dir,
+                            captures,
+                        )
                     else:
                         report["filtering"] = {"status": "skipped", "reason": "User stopped after crawl"}
 

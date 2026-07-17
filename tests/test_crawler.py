@@ -117,7 +117,7 @@ class _FakeQuestion:
     def __init__(self, answer):
         self.answer = answer
 
-    def ask(self):
+    async def ask_async(self):
         return self.answer
 
 
@@ -157,11 +157,14 @@ def test_key_driven_menus_cover_all_interactive_prompt_types(monkeypatch):
     monkeypatch.setattr(crawler, "questionary", fake)
     monkeypatch.setattr(crawler, "_console_menu_available", lambda: True)
 
-    assert crawler.prompt_single_choice(movies, "Select a movie") == "Movie B"
-    assert crawler.prompt_multi_choice(movies, "Select movies") == movies
-    assert crawler.prompt_row_selection(["A", "B", "C"], "Select rows") == ["B", "C"]
-    assert crawler.prompt_yes_no("Continue?") is True
-    assert crawler.prompt_positive_int("How many tickets?") == 4
+    async def exercise_prompts():
+        assert await crawler.prompt_single_choice(movies, "Select a movie") == "Movie B"
+        assert await crawler.prompt_multi_choice(movies, "Select movies") == movies
+        assert await crawler.prompt_row_selection(["A", "B", "C"], "Select rows") == ["B", "C"]
+        assert await crawler.prompt_yes_no("Continue?") is True
+        assert await crawler.prompt_positive_int("How many tickets?") == 4
+
+    asyncio.run(exercise_prompts())
 
     assert [call[0] for call in fake.calls] == [
         "select",
@@ -179,7 +182,7 @@ def test_key_driven_menu_cancellation_raises_keyboard_interrupt(monkeypatch):
     monkeypatch.setattr(crawler, "_console_menu_available", lambda: True)
 
     with pytest.raises(KeyboardInterrupt):
-        crawler.prompt_single_choice(["Movie A"], "Select a movie")
+        asyncio.run(crawler.prompt_single_choice(["Movie A"], "Select a movie"))
 
 
 def test_real_questionary_widgets_accept_prompt_configuration(monkeypatch):
@@ -191,23 +194,59 @@ def test_real_questionary_widgets_accept_prompt_configuration(monkeypatch):
 
     monkeypatch.setattr(crawler, "_console_menu_available", lambda: True)
 
-    with create_pipe_input() as pipe_input, create_app_session(
-        input=pipe_input,
-        output=DummyOutput(),
-    ):
-        monkeypatch.setattr(crawler, "_ask_console_question", lambda _question: "Movie A")
-        assert crawler.prompt_single_choice(["Movie A"], "Select a movie") == "Movie A"
+    async def construct_prompts():
+        with create_pipe_input() as pipe_input, create_app_session(
+            input=pipe_input,
+            output=DummyOutput(),
+        ):
+            async def answer_movie(_question):
+                return "Movie A"
 
-        multi_answers = iter([["IMAX"], ["A"]])
-        monkeypatch.setattr(crawler, "_ask_console_question", lambda _question: next(multi_answers))
-        assert crawler.prompt_multi_choice(["IMAX"], "Select formats") == ["IMAX"]
-        assert crawler.prompt_row_selection(["A"], "Select rows") == ["A"]
+            monkeypatch.setattr(crawler, "_ask_console_question", answer_movie)
+            assert await crawler.prompt_single_choice(["Movie A"], "Select a movie") == "Movie A"
 
-        monkeypatch.setattr(crawler, "_ask_console_question", lambda _question: "No")
-        assert crawler.prompt_yes_no("Continue?") is False
+            multi_answers = iter([["IMAX"], ["A"]])
 
-        monkeypatch.setattr(crawler, "_ask_console_question", lambda _question: 2)
-        assert crawler.prompt_positive_int("How many tickets?") == 2
+            async def answer_multi(_question):
+                return next(multi_answers)
+
+            monkeypatch.setattr(crawler, "_ask_console_question", answer_multi)
+            assert await crawler.prompt_multi_choice(["IMAX"], "Select formats") == ["IMAX"]
+            assert await crawler.prompt_row_selection(["A"], "Select rows") == ["A"]
+
+            async def answer_no(_question):
+                return "No"
+
+            monkeypatch.setattr(crawler, "_ask_console_question", answer_no)
+            assert await crawler.prompt_yes_no("Continue?") is False
+
+            async def answer_two(_question):
+                return 2
+
+            monkeypatch.setattr(crawler, "_ask_console_question", answer_two)
+            assert await crawler.prompt_positive_int("How many tickets?") == 2
+
+    asyncio.run(construct_prompts())
+
+
+def test_real_questionary_menu_runs_inside_crawler_event_loop(monkeypatch):
+    if crawler.questionary is None:
+        pytest.skip("questionary is not installed")
+    from prompt_toolkit.application import create_app_session
+    from prompt_toolkit.input.defaults import create_pipe_input
+    from prompt_toolkit.output import DummyOutput
+
+    monkeypatch.setattr(crawler, "_console_menu_available", lambda: True)
+
+    async def select_second_movie():
+        with create_pipe_input() as pipe_input, create_app_session(
+            input=pipe_input,
+            output=DummyOutput(),
+        ):
+            pipe_input.send_text("\x1b[B\r")
+            return await crawler.prompt_single_choice(["Movie A", "Movie B"], "Select a movie")
+
+    assert asyncio.run(select_second_movie()) == "Movie B"
 
 
 def test_build_target_url_uses_live_movie_page():
@@ -330,7 +369,7 @@ def test_interactive_filter_moves_matches_and_leftovers(monkeypatch, tmp_path):
     monkeypatch.setattr(crawler, "_console_menu_available", lambda: False)
     monkeypatch.setattr("builtins.input", lambda _prompt: next(answers))
 
-    summary = crawler.filter_captures_interactively(run_dir, captures)
+    summary = asyncio.run(crawler.filter_captures_interactively(run_dir, captures))
 
     assert summary["kept"] == 1
     assert summary["discarded"] == 1
