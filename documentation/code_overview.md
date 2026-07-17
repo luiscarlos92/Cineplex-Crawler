@@ -17,6 +17,7 @@ Key responsibilities:
 - normalize filter values so the UI workflow uses clean, deduplicated labels
 - build output paths for screenshots
 - parse Cineplex date labels into sortable `YYYY_MM_DD_Weekday` filename segments
+- convert showtimes into sortable zero-padded 24-hour `HH_MM` filename segments
 - discover available filters from the live site when possible
 - support later steps such as theater selection, experiences, dates, and preview-seat loops
 - orchestrate multiple theatres sequentially with independent filters, outputs, post-crawl filtering, and failure reporting

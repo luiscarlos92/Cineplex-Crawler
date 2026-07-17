@@ -276,6 +276,24 @@ def sortable_date_filename(label: str, iso_date: str | None = None) -> str:
     return f"{parsed:%Y_%m_%d}_{parsed:%A}"
 
 
+def timeslot_minutes(value: str) -> int | None:
+    normalized = value.strip().upper()
+    for time_format in ("%I:%M %p", "%H:%M"):
+        try:
+            parsed = datetime.strptime(normalized, time_format)
+            return parsed.hour * 60 + parsed.minute
+        except ValueError:
+            continue
+    return None
+
+
+def sortable_timeslot_filename(value: str) -> str:
+    minutes = timeslot_minutes(value)
+    if minutes is None:
+        return safe_filename(value, 15)
+    return f"{minutes // 60:02d}_{minutes % 60:02d}"
+
+
 def create_run_output_dir(
     output_root: Path,
     started_at: datetime,
@@ -312,7 +330,7 @@ def build_output_path(
         safe_filename(theatre, 55),
         safe_filename(session_type, 40),
         sortable_date_filename(date, date_iso),
-        safe_filename(timeslot, 15),
+        sortable_timeslot_filename(timeslot),
     ]
     return directory / ("-".join(parts) + ".png")
 
@@ -653,11 +671,8 @@ def date_iso_from_label(label: str) -> str | None:
 
 
 def _timeslot_sort_key(value: str) -> tuple[int, str]:
-    try:
-        parsed = datetime.strptime(value.strip().upper(), "%I:%M %p")
-        return parsed.hour * 60 + parsed.minute, value
-    except ValueError:
-        return 24 * 60, value
+    minutes = timeslot_minutes(value)
+    return (minutes if minutes is not None else 24 * 60), value
 
 
 def build_timeslot_choices(captures: Sequence[dict[str, object]]) -> list[TimeslotChoice]:

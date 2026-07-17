@@ -36,6 +36,7 @@
 - Questionary prompts use its asynchronous API on Playwright's existing event loop; a real keypress regression test protects against nested `asyncio.run()` failures.
 - The nested date → preview group → overlay timeslot loop is implemented with deterministic collision-safe screenshot names.
 - Screenshot date segments use `YYYY_MM_DD_Weekday`, preserving readable weekdays while sorting chronologically across months and years.
+- Screenshot time segments use zero-padded 24-hour `HH_MM`, sorting sessions chronologically within each date.
 - Every execution writes a timestamped JSON report without modifying the hand-written workflow notes.
 - Every invocation creates a unique `YYYYMMDD-HHMMSS-MovieName-TheatreName` screenshot subfolder beneath the configured output root.
 - A bounded live run captured and visually verified two different timeslots from the same `UltraAVX + D-BOX` preview group.

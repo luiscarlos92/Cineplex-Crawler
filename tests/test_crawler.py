@@ -49,7 +49,7 @@ def test_build_output_path_contains_all_workflow_dimensions(tmp_path):
     )
 
     assert path.parent == tmp_path
-    assert path.name == "Movie_One-Cinema_Two-IMAX_3D-2026_07_17_Friday-7_30_PM.png"
+    assert path.name == "Movie_One-Cinema_Two-IMAX_3D-2026_07_17_Friday-19_30.png"
 
 
 def test_output_filenames_sort_dates_chronologically(tmp_path):
@@ -85,7 +85,39 @@ def test_output_filename_can_use_iso_date_when_label_is_relative(tmp_path):
         date_iso="2026-08-06",
     )
 
-    assert path.name.endswith("-2026_08_06_Thursday-3_00_PM.png")
+    assert path.name.endswith("-2026_08_06_Thursday-15_00.png")
+
+
+def test_output_filenames_sort_timeslots_chronologically(tmp_path):
+    timeslots = [
+        "11:00 PM",
+        "3:00 PM",
+        "11:00 AM",
+        "7:00 PM",
+        "12:05 AM",
+        "12:00 PM",
+    ]
+    names = [
+        crawler.build_output_path(
+            "The Odyssey",
+            "Cineplex Cinemas Vaughan",
+            "IMAX 70MM",
+            "Thursday — August 6, 2026",
+            timeslot,
+            tmp_path,
+        ).name
+        for timeslot in timeslots
+    ]
+
+    assert sorted(names) == [names[4], names[2], names[5], names[1], names[3], names[0]]
+    assert [crawler.sortable_timeslot_filename(value) for value in timeslots] == [
+        "23_00",
+        "15_00",
+        "11_00",
+        "19_00",
+        "00_05",
+        "12_00",
+    ]
 
 
 def test_unique_path_adds_suffix_without_overwriting(tmp_path):
