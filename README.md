@@ -26,9 +26,10 @@ python crawler.py
 ```
 
 The crawler uses a consistent key-driven console menu for every interactive
-choice. Use Up/Down to move, Space to toggle items in multi-select menus, and
-Enter to submit. This covers movie, theatre, experiences, dates, post-crawl
-continue/stop, format/timeslot filtering, ticket count, and acceptable rows.
+choice. Use Up/Down to move, Space to toggle items in multi-select menus, `A`
+to select or clear all items, and Enter to submit. This covers movie, theatre,
+experiences, dates, post-crawl continue/stop, format/timeslot filtering, ticket
+count, and acceptable rows.
 Submitting an empty experience selection means no experience filtering.
 
 Selections can also be supplied on the command line:
@@ -98,7 +99,8 @@ as side by side.
 The run report records all filter choices, detected layouts and rows,
 qualifying seat blocks, move reasons, and final screenshot paths.
 
-Rows are selected from the same checkbox menu with Up/Down, Space, and Enter.
+Rows are selected from the same checkbox menu with Up/Down, Space, `A` for all,
+and Enter.
 When the crawler is run with redirected input instead of an interactive
 terminal, it falls back to text prompts; that fallback accepts comma-separated
 letters and ranges such as `A,B,C,F-J` or `AA-DD`.

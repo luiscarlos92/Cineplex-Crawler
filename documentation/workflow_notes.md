@@ -31,10 +31,10 @@ This document preserves the documentation-only workflow for the Cineplex browser
 11. Open the filters panel.
 12. Extract all available experiences.
 13. Wait for manual experience selection.
-   - Use Up/Down to navigate, Space to toggle multiple options, and Enter to submit.
+   - Use Up/Down to navigate, Space to toggle multiple options, `A` to select or clear all options, and Enter to submit.
 14. Apply the selected experiences.
 15. Open the dates selector and export all visible dates.
-   - Provide a top-level option for ALL DATES.
+   - Provide a visible `A` action that selects or clears ALL DATES and updates every checkbox.
 16. Start the loop over the selected dates.
    - For each selected date:
      - Click the date.
@@ -55,7 +55,7 @@ This document preserves the documentation-only workflow for the Cineplex browser
      - Ask for the required number of side-by-side tickets using a single-select menu.
      - Detect distinct auditorium layouts from the captured seat metadata.
      - For each format/layout combination, display its detected rows and ask for a row multi-selection.
-       - Use the same Up/Down, Space, and Enter checkbox interface.
+       - Use the same Up/Down, Space, `A` for all, and Enter checkbox interface.
        - A redirected-input fallback accepts row letters and inclusive ranges such as `A,B,C,F-J` or `AA-DD`.
      - Keep a screenshot if at least one selected row contains the requested number of adjacent available ordinary seats.
      - Move kept screenshots to `filtered/` and all other captures to `discarded/` within the run directory.
@@ -100,7 +100,7 @@ The following screenshots are already present in the workspace and should be tre
 
 ## Implementation decisions
 
-- The default user interaction is through consistent key-driven terminal menus: Up/Down navigates, Space toggles multi-select items, and Enter submits. Optional command-line selections support repeatable unattended runs, while redirected input retains a text fallback.
+- The default user interaction is through consistent key-driven terminal menus: Up/Down navigates, Space toggles multi-select items, `A` selects or clears every item, and Enter submits. Optional command-line selections support repeatable unattended runs, while redirected input retains a text fallback.
 - Interactive menus await Questionary on the crawler's existing asyncio loop. They must not call the synchronous prompt API, which would try to start a second event loop while Playwright is running.
 - Nearby-theatre results use an explicit browser geolocation when `LATITUDE` and `LONGITUDE` are configured; both must be set together.
 - The crawler stops at the seat-preview screen. It must not click `Buy Tickets`, select a seat, or enter checkout.

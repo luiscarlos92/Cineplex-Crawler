@@ -371,7 +371,7 @@ async def prompt_multi_choice(
                     label,
                     choices=choices,
                     pointer=">",
-                    instruction="(Up/Down to move, Space to toggle, Enter to submit)",
+                    instruction="(Up/Down to move, Space to toggle, A to toggle all, Enter to submit)",
                     use_jk_keys=False,
                     validate=validation,
                 )
@@ -457,7 +457,7 @@ async def prompt_row_selection(available_rows: Sequence[str], label: str) -> lis
                         for row in available_rows
                     ],
                     pointer=">",
-                    instruction="(Up/Down to move, Space to toggle, Enter to submit)",
+                    instruction="(Up/Down to move, Space to toggle, A to toggle all, Enter to submit)",
                     use_jk_keys=False,
                     validate=lambda selected: bool(selected) or "Select at least one row.",
                 )

@@ -30,7 +30,7 @@
 - Configuration is validated and resolved relative to the repository; environment variables override `.env`, and geolocation requires a complete latitude/longitude pair.
 - Movie, theatre, experience, and date discovery now use scoped live Tickets controls and structured Cineplex test IDs.
 - Theatre options include live IDs, cities, and distances and are filtered by the configured maximum distance.
-- Key-driven terminal selections and optional command-line selections are implemented, including explicit `any` experiences and `all` dates. Interactive menus consistently use Up/Down, Space for multi-select, and Enter to submit.
+- Key-driven terminal selections and optional command-line selections are implemented, including explicit `any` experiences and `all` dates. Interactive menus consistently use Up/Down, Space for multi-select, `A` to toggle all, and Enter to submit.
 - Questionary prompts use its asynchronous API on Playwright's existing event loop; a real keypress regression test protects against nested `asyncio.run()` failures.
 - The nested date → preview group → overlay timeslot loop is implemented with deterministic collision-safe screenshot names.
 - Every execution writes a timestamped JSON report without modifying the hand-written workflow notes.

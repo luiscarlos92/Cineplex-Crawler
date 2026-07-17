@@ -175,6 +175,7 @@ def test_key_driven_menus_cover_all_interactive_prompt_types(monkeypatch):
     ]
     checkbox_instructions = [call[2]["instruction"] for call in fake.calls if call[0] == "checkbox"]
     assert all("Space to toggle" in instruction for instruction in checkbox_instructions)
+    assert all("A to toggle all" in instruction for instruction in checkbox_instructions)
 
 
 def test_key_driven_menu_cancellation_raises_keyboard_interrupt(monkeypatch):
@@ -247,6 +248,27 @@ def test_real_questionary_menu_runs_inside_crawler_event_loop(monkeypatch):
             return await crawler.prompt_single_choice(["Movie A", "Movie B"], "Select a movie")
 
     assert asyncio.run(select_second_movie()) == "Movie B"
+
+
+def test_real_questionary_multiselect_a_key_toggles_all(monkeypatch):
+    if crawler.questionary is None:
+        pytest.skip("questionary is not installed")
+    from prompt_toolkit.application import create_app_session
+    from prompt_toolkit.input.defaults import create_pipe_input
+    from prompt_toolkit.output import DummyOutput
+
+    monkeypatch.setattr(crawler, "_console_menu_available", lambda: True)
+    dates = ["Today", "Tomorrow", "Sunday"]
+
+    async def select_all_dates():
+        with create_pipe_input() as pipe_input, create_app_session(
+            input=pipe_input,
+            output=DummyOutput(),
+        ):
+            pipe_input.send_text("a\r")
+            return await crawler.prompt_multi_choice(dates, "Select dates")
+
+    assert asyncio.run(select_all_dates()) == dates
 
 
 def test_build_target_url_uses_live_movie_page():
