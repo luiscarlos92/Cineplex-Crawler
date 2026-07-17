@@ -46,7 +46,7 @@ This document preserves the documentation-only workflow for the Cineplex browser
      - Return to the previous view and continue to the next Preview Seats group.
      - When all preview seats are done, return to the date list and continue to the next date.
 17. End with a success or failure result and the output folder destination.
-   - Suggested environment variable: OUTPUT_DIR=output
+   - `OUTPUT_DIR` is the root; each invocation creates a UTC-timestamped subfolder such as `output/20260717T031530Z/`.
 
 ## Suggested environment variables
 - MAX_DISTANCE_KM=50
@@ -83,6 +83,7 @@ The following screenshots are already present in the workspace and should be tre
 - `--dry-run` validates discovery and selections without opening a seat preview.
 - `--max-screenshots` allows a bounded end-to-end validation run.
 - Each execution writes a timestamped JSON report under `documentation/run_reports/`, including status, selections, captures, and failures.
+- Each execution writes screenshots into a new UTC-timestamped directory beneath `OUTPUT_DIR`; runs never share a screenshot directory.
 
 ## Implementation decisions
 

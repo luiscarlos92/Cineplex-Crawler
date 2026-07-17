@@ -54,6 +54,11 @@ screenshots go to `output/`; timestamped machine-readable run reports go to
 `documentation/run_reports/`. Existing screenshots are never overwritten—a
 numeric suffix is added when a filename already exists.
 
+Each invocation creates its own UTC-timestamped folder under the configured
+`OUTPUT_DIR`, for example `output/20260717T031530Z/`. All screenshots from that
+invocation are written to that folder. If two runs start within the same second,
+the later folder receives a numeric suffix instead of reusing the first one.
+
 Immediately before each capture, the crawler hides Cineplex's fixed `Copy Link`
 / `Buy Tickets` action sheet so it does not cover the seat map. This cleanup is
 reapplied after every timeslot change.

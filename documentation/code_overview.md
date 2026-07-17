@@ -37,7 +37,7 @@ The regression tests in [tests/test_crawler.py](tests/test_crawler.py) validate 
 
 ## Configuration model
 The crawler reads settings from the environment and from a local .env file. The most important values are:
-- OUTPUT_DIR: folder where screenshots are saved
+- OUTPUT_DIR: root folder beneath which each run creates its own timestamped screenshot directory
 - DOCUMENTATION_DIR: folder for documentation artifacts
 - MAX_DISTANCE_KM: theater distance threshold for filtering
 - HEADLESS: whether the browser runs headless

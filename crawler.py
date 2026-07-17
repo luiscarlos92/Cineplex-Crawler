@@ -5,7 +5,7 @@ import asyncio
 import json
 import os
 import re
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Iterable, Sequence
@@ -206,6 +206,15 @@ def unique_path(path: Path) -> Path:
         if not candidate.exists():
             return candidate
     raise RuntimeError(f"Could not find a free output filename for {path.name}")
+
+
+def create_run_output_dir(output_root: Path, started_at: datetime | None = None) -> Path:
+    """Create one collision-safe UTC timestamp folder for a crawler invocation."""
+    timestamp = (started_at or datetime.now(timezone.utc)).astimezone(timezone.utc)
+    folder_name = timestamp.strftime("%Y%m%dT%H%M%SZ")
+    run_dir = unique_path(output_root / folder_name)
+    run_dir.mkdir(parents=True, exist_ok=False)
+    return run_dir
 
 
 def build_output_path(
@@ -700,16 +709,21 @@ def build_parser() -> argparse.ArgumentParser:
 async def run(args: argparse.Namespace) -> int:
     config = load_config()
     if args.max_distance_km is not None:
-        config = Config(**{**asdict(config), "max_distance_km": args.max_distance_km})
+        config = replace(config, max_distance_km=args.max_distance_km)
     if args.headless is not None:
-        config = Config(**{**asdict(config), "headless": args.headless})
+        config = replace(config, headless=args.headless)
     if args.max_screenshots is not None and args.max_screenshots < 1:
         raise ValueError("--max-screenshots must be at least 1")
 
-    config.output_dir.mkdir(parents=True, exist_ok=True)
+    started_at = datetime.now(timezone.utc)
+    output_root = config.output_dir
+    run_output_dir = create_run_output_dir(output_root, started_at)
+    config = replace(config, output_dir=run_output_dir)
     report: dict[str, object] = {
-        "started_at": datetime.now(timezone.utc).isoformat(),
+        "started_at": started_at.isoformat(),
         "status": "running",
+        "output_root": str(output_root),
+        "output_dir": str(run_output_dir),
         "config": _serialize_config(config),
         "captures": [],
         "errors": [],
