@@ -248,6 +248,34 @@ def unique_path(path: Path) -> Path:
     raise RuntimeError(f"Could not find a free output filename for {path.name}")
 
 
+def parse_cineplex_date_label(label: str) -> calendar_date | None:
+    match = re.search(
+        r"\b(January|February|March|April|May|June|July|August|September|October|November|December)"
+        r"\s+(\d{1,2}),\s+(\d{4})\b",
+        label,
+        flags=re.I,
+    )
+    if not match:
+        return None
+    try:
+        return datetime.strptime(match.group(0), "%B %d, %Y").date()
+    except ValueError:
+        return None
+
+
+def sortable_date_filename(label: str, iso_date: str | None = None) -> str:
+    parsed: calendar_date | None = None
+    if iso_date:
+        try:
+            parsed = calendar_date.fromisoformat(iso_date)
+        except ValueError:
+            pass
+    parsed = parsed or parse_cineplex_date_label(label)
+    if not parsed:
+        return safe_filename(label, 35)
+    return f"{parsed:%Y_%m_%d}_{parsed:%A}"
+
+
 def create_run_output_dir(
     output_root: Path,
     started_at: datetime,
@@ -266,6 +294,8 @@ def create_run_output_dir(
     run_dir = unique_path(output_root / folder_name)
     run_dir.mkdir(parents=True, exist_ok=False)
     return run_dir
+
+
 def build_output_path(
     movie: str,
     theatre: str,
@@ -273,13 +303,15 @@ def build_output_path(
     date: str = "date",
     timeslot: str = "time",
     output_dir: Path | None = None,
+    *,
+    date_iso: str | None = None,
 ) -> Path:
     directory = output_dir or (ROOT / "output")
     parts = [
         safe_filename(movie, 45),
         safe_filename(theatre, 55),
         safe_filename(session_type, 40),
-        safe_filename(date, 35),
+        sortable_date_filename(date, date_iso),
         safe_filename(timeslot, 15),
     ]
     return directory / ("-".join(parts) + ".png")
@@ -612,19 +644,7 @@ def _date_from_capture(capture: dict[str, object]) -> calendar_date | None:
             return calendar_date.fromisoformat(str(iso_value))
         except ValueError:
             pass
-    label = str(capture.get("date", ""))
-    match = re.search(
-        r"\b(January|February|March|April|May|June|July|August|September|October|November|December)"
-        r"\s+(\d{1,2}),\s+(\d{4})\b",
-        label,
-        flags=re.I,
-    )
-    if not match:
-        return None
-    try:
-        return datetime.strptime(match.group(0), "%B %d, %Y").date()
-    except ValueError:
-        return None
+    return parse_cineplex_date_label(str(capture.get("date", "")))
 
 
 def date_iso_from_label(label: str) -> str | None:
@@ -1210,6 +1230,7 @@ async def capture_preview_group(
             print(f"    Skipped sold-out {group.format_name} at {timeslot}.")
             continue
         seats = await collect_seat_metadata(page)
+        date_iso = date_iso_from_label(date.label)
         output_path = unique_path(
             build_output_path(
                 movie.title,
@@ -1218,13 +1239,14 @@ async def capture_preview_group(
                 date.label,
                 timeslot,
                 config.output_dir,
+                date_iso=date_iso,
             )
         )
         await page.screenshot(path=str(output_path), full_page=True)
         captures.append(
             {
                 "date": date.label,
-                "date_iso": date_iso_from_label(date.label),
+                "date_iso": date_iso,
                 "format": group.format_name,
                 "timeslot": timeslot,
                 "showtime_id": test_id.removeprefix("showtime-"),

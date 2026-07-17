@@ -43,7 +43,8 @@ This document preserves the documentation-only workflow for the Cineplex browser
      - For each Preview Seats group, iterate through the available timeslots.
      - Click the timeslot.
      - If Cineplex displays the sold-out modal, click `Change showtime`, record the session as skipped, and continue to the next timeslot.
-     - Capture a screenshot named using the pattern: Movie Name-Cinema Name-Format Name-Date-Timeslot
+     - Capture a screenshot named using the pattern: Movie Name-Cinema Name-Format Name-YYYY_MM_DD_Weekday-Timeslot.
+       - Parse Cineplex's display date and place the zero-padded year, month, and day first so filename sorting is chronological.
      - Continue until all timeslots are processed.
      - Return to the previous view and continue to the next Preview Seats group.
      - When all preview seats are done, return to the date list and continue to the next date.

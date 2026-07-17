@@ -43,13 +43,49 @@ def test_build_output_path_contains_all_workflow_dimensions(tmp_path):
         "Movie / One",
         "Cinema & Two",
         "IMAX 3D",
-        "Friday, July 17",
+        "Friday, July 17, 2026",
         "7:30 PM",
         tmp_path,
     )
 
     assert path.parent == tmp_path
-    assert path.name == "Movie_One-Cinema_Two-IMAX_3D-Friday_July_17-7_30_PM.png"
+    assert path.name == "Movie_One-Cinema_Two-IMAX_3D-2026_07_17_Friday-7_30_PM.png"
+
+
+def test_output_filenames_sort_dates_chronologically(tmp_path):
+    labels = [
+        "Friday — January 1, 2027",
+        "Thursday — August 6, 2026",
+        "Thursday — December 31, 2026",
+    ]
+    names = [
+        crawler.build_output_path(
+            "The Odyssey",
+            "Cineplex Cinemas Vaughan",
+            "IMAX 70MM",
+            label,
+            "11:00 AM",
+            tmp_path,
+        ).name
+        for label in labels
+    ]
+
+    assert sorted(names) == [names[1], names[2], names[0]]
+    assert "-2026_08_06_Thursday-" in names[1]
+
+
+def test_output_filename_can_use_iso_date_when_label_is_relative(tmp_path):
+    path = crawler.build_output_path(
+        "The Odyssey",
+        "Cineplex Cinemas Vaughan",
+        "IMAX 70MM",
+        "Tomorrow",
+        "3:00 PM",
+        tmp_path,
+        date_iso="2026-08-06",
+    )
+
+    assert path.name.endswith("-2026_08_06_Thursday-3_00_PM.png")
 
 
 def test_unique_path_adds_suffix_without_overwriting(tmp_path):

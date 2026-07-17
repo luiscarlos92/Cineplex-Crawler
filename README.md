@@ -67,6 +67,11 @@ using `YYYYMMDD-HHMMSS-MovieName-TheatreName`, for example
 identical runs start within the same second, the later folder receives a numeric
 suffix.
 
+Screenshot filenames use
+`Movie-Theatre-Format-YYYY_MM_DD_Weekday-Timeslot.png`, so files from the same
+movie, theatre, and format sort chronologically by date. For example:
+`The_Odyssey-Cineplex_Cinemas_Vaughan-IMAX_70MM-2026_08_06_Thursday-11_00_AM.png`.
+
 Immediately before each capture, the crawler hides Cineplex's fixed `Copy Link`
 / `Buy Tickets` action sheet so it does not cover the seat map. This cleanup is
 reapplied after every timeslot change.

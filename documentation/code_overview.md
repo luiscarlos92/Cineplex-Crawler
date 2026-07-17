@@ -16,6 +16,7 @@ Key responsibilities:
 - load configuration from environment variables
 - normalize filter values so the UI workflow uses clean, deduplicated labels
 - build output paths for screenshots
+- parse Cineplex date labels into sortable `YYYY_MM_DD_Weekday` filename segments
 - discover available filters from the live site when possible
 - support later steps such as theater selection, experiences, dates, and preview-seat loops
 - capture semantic seat-map metadata and filter screenshots by session, row, and adjacent-seat availability
