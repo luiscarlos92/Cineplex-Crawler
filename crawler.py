@@ -7,11 +7,17 @@ import json
 import os
 import re
 import shutil
+import sys
 from dataclasses import asdict, dataclass, replace
 from datetime import date as calendar_date
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Iterable, Sequence
+
+try:
+    import questionary
+except ImportError:  # The text fallback keeps the module usable before dependencies are installed.
+    questionary = None
 
 from playwright.async_api import Locator, Page, TimeoutError as PlaywrightTimeoutError, async_playwright
 
@@ -293,9 +299,41 @@ def _match_named_choice(query: str, options: Sequence[object], label_getter) -> 
     raise ValueError(f"{query!r} is ambiguous; matching options: {matches}")
 
 
+def _console_menu_available() -> bool:
+    """Return whether full-screen key-driven prompts are safe in this process."""
+    return bool(
+        questionary is not None
+        and getattr(sys.stdin, "isatty", lambda: False)()
+        and getattr(sys.stdout, "isatty", lambda: False)()
+    )
+
+
+def _ask_console_question(question):
+    answer = question.ask()
+    if answer is None:
+        raise KeyboardInterrupt
+    return answer
+
+
 def prompt_single_choice(options: Sequence[object], label: str, label_getter=str) -> object:
     if not options:
         raise RuntimeError(f"No options were discovered for {label.lower()}")
+    if _console_menu_available():
+        choices = [
+            questionary.Choice(title=str(label_getter(option)), value=option, shortcut_key=False)
+            for option in options
+        ]
+        return _ask_console_question(
+            questionary.select(
+                label,
+                choices=choices,
+                pointer=">",
+                instruction="(Up/Down to move, Enter to select)",
+                use_shortcuts=False,
+                use_jk_keys=False,
+            )
+        )
+
     print(f"\n{label}")
     for index, option in enumerate(options, start=1):
         print(f"  {index}. {label_getter(option)}")
@@ -317,6 +355,29 @@ def prompt_multi_choice(
 ) -> list[object]:
     if not options:
         return []
+    if _console_menu_available():
+        choices = [
+            questionary.Choice(title=str(label_getter(option)), value=option, shortcut_key=False)
+            for option in options
+        ]
+        validation = (
+            (lambda selected: True)
+            if blank_means_none
+            else (lambda selected: bool(selected) or "Select at least one item.")
+        )
+        return list(
+            _ask_console_question(
+                questionary.checkbox(
+                    label,
+                    choices=choices,
+                    pointer=">",
+                    instruction="(Up/Down to move, Space to toggle, Enter to submit)",
+                    use_jk_keys=False,
+                    validate=validation,
+                )
+            )
+        )
+
     print(f"\n{label}")
     for index, option in enumerate(options, start=1):
         print(f"  {index}. {label_getter(option)}")
@@ -386,6 +447,23 @@ def parse_row_selection(raw: str, available_rows: Sequence[str]) -> list[str]:
 def prompt_row_selection(available_rows: Sequence[str], label: str) -> list[str]:
     if not available_rows:
         return []
+    if _console_menu_available():
+        return list(
+            _ask_console_question(
+                questionary.checkbox(
+                    label,
+                    choices=[
+                        questionary.Choice(title=row, value=row, shortcut_key=False)
+                        for row in available_rows
+                    ],
+                    pointer=">",
+                    instruction="(Up/Down to move, Space to toggle, Enter to submit)",
+                    use_jk_keys=False,
+                    validate=lambda selected: bool(selected) or "Select at least one row.",
+                )
+            )
+        )
+
     print(f"\n{label}")
     print(f"Available rows: {', '.join(available_rows)}")
     while True:
@@ -399,6 +477,21 @@ def prompt_row_selection(available_rows: Sequence[str], label: str) -> list[str]
 
 
 def prompt_yes_no(question: str, *, default: bool = False) -> bool:
+    if _console_menu_available():
+        choices = ["Yes", "No"]
+        answer = _ask_console_question(
+            questionary.select(
+                question,
+                choices=choices,
+                default="Yes" if default else "No",
+                pointer=">",
+                instruction="(Up/Down to move, Enter to select)",
+                use_shortcuts=False,
+                use_jk_keys=False,
+            )
+        )
+        return answer == "Yes"
+
     suffix = "[Y/n]" if default else "[y/N]"
     while True:
         raw = input(f"{question} {suffix}: ").strip().casefold()
@@ -414,6 +507,29 @@ def prompt_yes_no(question: str, *, default: bool = False) -> bool:
 
 
 def prompt_positive_int(question: str) -> int:
+    if _console_menu_available():
+        choices = [
+            questionary.Choice(
+                title=f"{count} ticket{'s' if count != 1 else ''}",
+                value=count,
+                shortcut_key=False,
+            )
+            for count in range(1, 51)
+        ]
+        return int(
+            _ask_console_question(
+                questionary.select(
+                    question,
+                    choices=choices,
+                    default=choices[1],
+                    pointer=">",
+                    instruction="(Up/Down to move, Enter to select)",
+                    use_shortcuts=False,
+                    use_jk_keys=False,
+                )
+            )
+        )
+
     while True:
         raw = input(f"{question} (or 'q' to quit): ").strip().casefold()
         if raw in {"q", "quit", "exit"}:
@@ -1386,7 +1502,7 @@ async def run(args: argparse.Namespace) -> int:
             elif args.dry_run:
                 selected_dates = dates[:1]
             else:
-                selected_dates = prompt_multi_choice(dates, "Select dates (enter 'a' for ALL DATES)", lambda option: option.label)
+                selected_dates = prompt_multi_choice(dates, "Select dates", lambda option: option.label)
             report["dates"] = [option.label for option in selected_dates]
 
             if args.dry_run:

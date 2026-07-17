@@ -30,7 +30,7 @@
 - Configuration is validated and resolved relative to the repository; environment variables override `.env`, and geolocation requires a complete latitude/longitude pair.
 - Movie, theatre, experience, and date discovery now use scoped live Tickets controls and structured Cineplex test IDs.
 - Theatre options include live IDs, cities, and distances and are filtered by the configured maximum distance.
-- Terminal selections and optional command-line selections are implemented, including explicit `any` experiences and `all` dates.
+- Key-driven terminal selections and optional command-line selections are implemented, including explicit `any` experiences and `all` dates. Interactive menus consistently use Up/Down, Space for multi-select, and Enter to submit.
 - The nested date → preview group → overlay timeslot loop is implemented with deterministic collision-safe screenshot names.
 - Every execution writes a timestamped JSON report without modifying the hand-written workflow notes.
 - Every invocation creates a unique `YYYYMMDD-HHMMSS-MovieName-TheatreName` screenshot subfolder beneath the configured output root.

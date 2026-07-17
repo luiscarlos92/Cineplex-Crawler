@@ -19,6 +19,7 @@ Key responsibilities:
 - discover available filters from the live site when possible
 - support later steps such as theater selection, experiences, dates, and preview-seat loops
 - capture semantic seat-map metadata and filter screenshots by session, row, and adjacent-seat availability
+- provide reusable arrow-key single- and multi-select console prompts across the crawl and filtering stages
 
 ### probe_cineplex.py
 The lightweight probe script in [probe_cineplex.py](../probe_cineplex.py) is a smoke-test for the live Cineplex homepage. Its job is simpler than the crawler:

@@ -113,6 +113,103 @@ def test_named_choice_requires_a_unique_match():
         crawler._match_named_choice("Toronto", options, str)
 
 
+class _FakeQuestion:
+    def __init__(self, answer):
+        self.answer = answer
+
+    def ask(self):
+        return self.answer
+
+
+class _FakeChoice:
+    def __init__(self, title, value=None, **_kwargs):
+        self.title = title
+        self.value = title if value is None else value
+
+
+class _FakeQuestionary:
+    Choice = _FakeChoice
+
+    def __init__(self, answers):
+        self.answers = iter(answers)
+        self.calls = []
+
+    def select(self, message, **kwargs):
+        self.calls.append(("select", message, kwargs))
+        return _FakeQuestion(next(self.answers))
+
+    def checkbox(self, message, **kwargs):
+        self.calls.append(("checkbox", message, kwargs))
+        return _FakeQuestion(next(self.answers))
+
+
+def test_key_driven_menus_cover_all_interactive_prompt_types(monkeypatch):
+    movies = ["Movie A", "Movie B"]
+    fake = _FakeQuestionary(
+        [
+            movies[1],
+            movies,
+            ["B", "C"],
+            "Yes",
+            4,
+        ]
+    )
+    monkeypatch.setattr(crawler, "questionary", fake)
+    monkeypatch.setattr(crawler, "_console_menu_available", lambda: True)
+
+    assert crawler.prompt_single_choice(movies, "Select a movie") == "Movie B"
+    assert crawler.prompt_multi_choice(movies, "Select movies") == movies
+    assert crawler.prompt_row_selection(["A", "B", "C"], "Select rows") == ["B", "C"]
+    assert crawler.prompt_yes_no("Continue?") is True
+    assert crawler.prompt_positive_int("How many tickets?") == 4
+
+    assert [call[0] for call in fake.calls] == [
+        "select",
+        "checkbox",
+        "checkbox",
+        "select",
+        "select",
+    ]
+    checkbox_instructions = [call[2]["instruction"] for call in fake.calls if call[0] == "checkbox"]
+    assert all("Space to toggle" in instruction for instruction in checkbox_instructions)
+
+
+def test_key_driven_menu_cancellation_raises_keyboard_interrupt(monkeypatch):
+    monkeypatch.setattr(crawler, "questionary", _FakeQuestionary([None]))
+    monkeypatch.setattr(crawler, "_console_menu_available", lambda: True)
+
+    with pytest.raises(KeyboardInterrupt):
+        crawler.prompt_single_choice(["Movie A"], "Select a movie")
+
+
+def test_real_questionary_widgets_accept_prompt_configuration(monkeypatch):
+    if crawler.questionary is None:
+        pytest.skip("questionary is not installed")
+    from prompt_toolkit.application import create_app_session
+    from prompt_toolkit.input.defaults import create_pipe_input
+    from prompt_toolkit.output import DummyOutput
+
+    monkeypatch.setattr(crawler, "_console_menu_available", lambda: True)
+
+    with create_pipe_input() as pipe_input, create_app_session(
+        input=pipe_input,
+        output=DummyOutput(),
+    ):
+        monkeypatch.setattr(crawler, "_ask_console_question", lambda _question: "Movie A")
+        assert crawler.prompt_single_choice(["Movie A"], "Select a movie") == "Movie A"
+
+        multi_answers = iter([["IMAX"], ["A"]])
+        monkeypatch.setattr(crawler, "_ask_console_question", lambda _question: next(multi_answers))
+        assert crawler.prompt_multi_choice(["IMAX"], "Select formats") == ["IMAX"]
+        assert crawler.prompt_row_selection(["A"], "Select rows") == ["A"]
+
+        monkeypatch.setattr(crawler, "_ask_console_question", lambda _question: "No")
+        assert crawler.prompt_yes_no("Continue?") is False
+
+        monkeypatch.setattr(crawler, "_ask_console_question", lambda _question: 2)
+        assert crawler.prompt_positive_int("How many tickets?") == 2
+
+
 def test_build_target_url_uses_live_movie_page():
     assert crawler.build_target_url("Inside Out 2") == "https://www.cineplex.com/en/movie/inside-out-2"
 
@@ -230,6 +327,7 @@ def test_interactive_filter_moves_matches_and_leftovers(monkeypatch, tmp_path):
         },
     ]
     answers = iter(["a", "2", "all"])
+    monkeypatch.setattr(crawler, "_console_menu_available", lambda: False)
     monkeypatch.setattr("builtins.input", lambda _prompt: next(answers))
 
     summary = crawler.filter_captures_interactively(run_dir, captures)

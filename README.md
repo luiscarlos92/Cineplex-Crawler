@@ -25,9 +25,11 @@ Start the interactive workflow with:
 python crawler.py
 ```
 
-The crawler presents numbered menus for one movie, one theatre, multiple
-experiences, and multiple dates. Leaving the experience prompt blank means no
-experience filtering; entering `a` at the date prompt means all visible dates.
+The crawler uses a consistent key-driven console menu for every interactive
+choice. Use Up/Down to move, Space to toggle items in multi-select menus, and
+Enter to submit. This covers movie, theatre, experiences, dates, post-crawl
+continue/stop, format/timeslot filtering, ticket count, and acceptable rows.
+Submitting an empty experience selection means no experience filtering.
 
 Selections can also be supplied on the command line:
 
@@ -96,9 +98,10 @@ as side by side.
 The run report records all filter choices, detected layouts and rows,
 qualifying seat blocks, move reasons, and final screenshot paths.
 
-Rows are entered directly by letter. Commas and inclusive ranges are supported,
-for example `A,B,C,F-J`; use `all` to select every displayed row. Multi-letter
-row ranges such as `AA-DD` follow the auditorium's displayed row order.
+Rows are selected from the same checkbox menu with Up/Down, Space, and Enter.
+When the crawler is run with redirected input instead of an interactive
+terminal, it falls back to text prompts; that fallback accepts comma-separated
+letters and ranges such as `A,B,C,F-J` or `AA-DD`.
 
 After the editable install, `cineplex-crawler` can be used in place of
 `python crawler.py`.

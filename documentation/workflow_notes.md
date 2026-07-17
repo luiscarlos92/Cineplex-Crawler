@@ -18,7 +18,7 @@ This document preserves the documentation-only workflow for the Cineplex browser
 3. Open the Movies dropdown.
 4. Extract all movie names from the page.
    - Scroll or use DOM extraction until the full list is collected.
-5. Wait for manual movie selection.
+5. Wait for manual movie selection using the arrow-key console menu.
    - For now, assume one movie is selected.
 6. After the movie is chosen, select it in the filter menu by searching the textbox with the movie name.
 7. Move to the theaters step.
@@ -31,7 +31,7 @@ This document preserves the documentation-only workflow for the Cineplex browser
 11. Open the filters panel.
 12. Extract all available experiences.
 13. Wait for manual experience selection.
-   - This step should support multi-select.
+   - Use Up/Down to navigate, Space to toggle multiple options, and Enter to submit.
 14. Apply the selected experiences.
 15. Open the dates selector and export all visible dates.
    - Provide a top-level option for ALL DATES.
@@ -51,12 +51,12 @@ This document preserves the documentation-only workflow for the Cineplex browser
    - If no, leave the captured screenshots in the run directory and finish.
    - If yes:
      - Group consecutive dates that share the same captured timeslot schedule for each format.
-     - Present each format/timeslot/date-period combination as a separate multi-select option.
-     - Ask for the required number of side-by-side tickets.
+     - Present each format/timeslot/date-period combination as a separate arrow-key multi-select option.
+     - Ask for the required number of side-by-side tickets using a single-select menu.
      - Detect distinct auditorium layouts from the captured seat metadata.
      - For each format/layout combination, display its detected rows and ask for a row multi-selection.
-       - Accept direct row letters, comma-separated values, and inclusive ranges such as `A,B,C,F-J` or `AA-DD`.
-       - Use `all` to select every displayed row; `A` selects row A rather than meaning all.
+       - Use the same Up/Down, Space, and Enter checkbox interface.
+       - A redirected-input fallback accepts row letters and inclusive ranges such as `A,B,C,F-J` or `AA-DD`.
      - Keep a screenshot if at least one selected row contains the requested number of adjacent available ordinary seats.
      - Move kept screenshots to `filtered/` and all other captures to `discarded/` within the run directory.
 
@@ -100,7 +100,7 @@ The following screenshots are already present in the workspace and should be tre
 
 ## Implementation decisions
 
-- The default user interaction is through numbered terminal menus. Optional command-line selections will support repeatable unattended runs.
+- The default user interaction is through consistent key-driven terminal menus: Up/Down navigates, Space toggles multi-select items, and Enter submits. Optional command-line selections support repeatable unattended runs, while redirected input retains a text fallback.
 - Nearby-theatre results use an explicit browser geolocation when `LATITUDE` and `LONGITUDE` are configured; both must be set together.
 - The crawler stops at the seat-preview screen. It must not click `Buy Tickets`, select a seat, or enter checkout.
 - Hand-written files in `documentation/` are preserved. Each execution writes a separate machine-readable report under `documentation/run_reports/`.
