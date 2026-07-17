@@ -186,6 +186,55 @@ def test_key_driven_menu_cancellation_raises_keyboard_interrupt(monkeypatch):
         asyncio.run(crawler.prompt_single_choice(["Movie A"], "Select a movie"))
 
 
+def test_empty_multiselect_followup_can_select_all(monkeypatch):
+    options = ["IMAX", "UltraAVX", "VIP"]
+    fake = _FakeQuestionary([[], True])
+    monkeypatch.setattr(crawler, "questionary", fake)
+    monkeypatch.setattr(crawler, "_console_menu_available", lambda: True)
+
+    selected = asyncio.run(crawler.prompt_multi_choice(options, "Select experiences"))
+
+    assert selected == options
+    assert [(call[0], call[1]) for call in fake.calls] == [
+        ("checkbox", "Select experiences"),
+        ("select", "You didn't select anything. What would you like to do?"),
+    ]
+
+
+def test_empty_multiselect_followup_can_go_back(monkeypatch):
+    options = ["Today", "Tomorrow"]
+    fake = _FakeQuestionary([[], False, [options[1]]])
+    monkeypatch.setattr(crawler, "questionary", fake)
+    monkeypatch.setattr(crawler, "_console_menu_available", lambda: True)
+
+    selected = asyncio.run(crawler.prompt_multi_choice(options, "Select dates"))
+
+    assert selected == ["Tomorrow"]
+    assert [call[0] for call in fake.calls] == ["checkbox", "select", "checkbox"]
+
+
+def test_empty_row_multiselect_can_select_all(monkeypatch):
+    rows = ["A", "B", "C"]
+    fake = _FakeQuestionary([[], True])
+    monkeypatch.setattr(crawler, "questionary", fake)
+    monkeypatch.setattr(crawler, "_console_menu_available", lambda: True)
+
+    selected = asyncio.run(crawler.prompt_row_selection(rows, "Select rows"))
+
+    assert selected == rows
+
+
+def test_redirected_empty_multiselect_requires_all_or_back_confirmation(monkeypatch):
+    options = ["Today", "Tomorrow"]
+    answers = iter(["", "b", "", "a"])
+    monkeypatch.setattr(crawler, "_console_menu_available", lambda: False)
+    monkeypatch.setattr("builtins.input", lambda _prompt: next(answers))
+
+    selected = asyncio.run(crawler.prompt_multi_choice(options, "Select dates"))
+
+    assert selected == options
+
+
 def test_real_questionary_widgets_accept_prompt_configuration(monkeypatch):
     if crawler.questionary is None:
         pytest.skip("questionary is not installed")
@@ -269,6 +318,29 @@ def test_real_questionary_multiselect_a_key_toggles_all(monkeypatch):
             return await crawler.prompt_multi_choice(dates, "Select dates")
 
     assert asyncio.run(select_all_dates()) == dates
+
+
+def test_real_questionary_empty_multiselect_followup_selects_all(monkeypatch):
+    if crawler.questionary is None:
+        pytest.skip("questionary is not installed")
+    from prompt_toolkit.application import create_app_session
+    from prompt_toolkit.input.defaults import create_pipe_input
+    from prompt_toolkit.output import DummyOutput
+
+    monkeypatch.setattr(crawler, "_console_menu_available", lambda: True)
+    dates = ["Today", "Tomorrow", "Sunday"]
+
+    async def confirm_all_dates():
+        with create_pipe_input() as pipe_input, create_app_session(
+            input=pipe_input,
+            output=DummyOutput(),
+        ):
+            # Enter submits an empty checkbox; Up selects "Select all" over the
+            # safer default "Go back"; Enter confirms.
+            pipe_input.send_text("\r\x1b[A\r")
+            return await crawler.prompt_multi_choice(dates, "Select dates")
+
+    assert asyncio.run(confirm_all_dates()) == dates
 
 
 def test_build_target_url_uses_live_movie_page():

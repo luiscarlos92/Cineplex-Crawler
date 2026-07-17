@@ -32,6 +32,7 @@ This document preserves the documentation-only workflow for the Cineplex browser
 12. Extract all available experiences.
 13. Wait for manual experience selection.
    - Use Up/Down to navigate, Space to toggle multiple options, `A` to select or clear all options, and Enter to submit.
+   - If Enter is pressed with nothing selected, ask whether to `Select all` or `Go back`; default to `Go back`.
 14. Apply the selected experiences.
 15. Open the dates selector and export all visible dates.
    - Provide a visible `A` action that selects or clears ALL DATES and updates every checkbox.
@@ -57,6 +58,7 @@ This document preserves the documentation-only workflow for the Cineplex browser
      - Detect distinct auditorium layouts from the captured seat metadata.
      - For each format/layout combination, display its detected rows and ask for a row multi-selection.
        - Use the same Up/Down, Space, `A` for all, and Enter checkbox interface.
+       - An empty submission must ask whether to select every row or return to the row list.
        - A redirected-input fallback accepts row letters and inclusive ranges such as `A,B,C,F-J` or `AA-DD`.
      - Keep a screenshot if at least one selected row contains the requested number of adjacent available ordinary seats.
      - Move kept screenshots to `filtered/` and all other captures to `discarded/` within the run directory.
@@ -102,6 +104,7 @@ The following screenshots are already present in the workspace and should be tre
 ## Implementation decisions
 
 - The default user interaction is through consistent key-driven terminal menus: Up/Down navigates, Space toggles multi-select items, `A` selects or clears every item, and Enter submits. Optional command-line selections support repeatable unattended runs, while redirected input retains a text fallback.
+- Empty multi-select submissions are never accepted silently. A follow-up offers `Select all` or `Go back`, with `Go back` as the safe default.
 - Interactive menus await Questionary on the crawler's existing asyncio loop. They must not call the synchronous prompt API, which would try to start a second event loop while Playwright is running.
 - Nearby-theatre results use an explicit browser geolocation when `LATITUDE` and `LONGITUDE` are configured; both must be set together.
 - The crawler stops at the seat-preview screen. It must not click `Buy Tickets`, select a seat, or enter checkout.

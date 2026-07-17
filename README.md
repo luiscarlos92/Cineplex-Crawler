@@ -30,7 +30,9 @@ choice. Use Up/Down to move, Space to toggle items in multi-select menus, `A`
 to select or clear all items, and Enter to submit. This covers movie, theatre,
 experiences, dates, post-crawl continue/stop, format/timeslot filtering, ticket
 count, and acceptable rows.
-Submitting an empty experience selection means no experience filtering.
+Submitting any multi-select menu without choosing an item opens a confirmation:
+choose `Select all` to use every option or `Go back` to reopen the list. `Go
+back` is highlighted by default to prevent an accidental all-dates crawl.
 
 Selections can also be supplied on the command line:
 

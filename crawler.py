@@ -346,12 +346,43 @@ async def prompt_single_choice(options: Sequence[object], label: str, label_gett
         print("Please enter one of the displayed numbers.")
 
 
+async def confirm_empty_multiselect() -> bool:
+    """Return True to select all after an empty checkbox submission."""
+    question = "You didn't select anything. What would you like to do?"
+    if _console_menu_available():
+        choices = [
+            questionary.Choice(title="Select all", value=True, shortcut_key=False),
+            questionary.Choice(title="Go back", value=False, shortcut_key=False),
+        ]
+        return bool(
+            await _ask_console_question(
+                questionary.select(
+                    question,
+                    choices=choices,
+                    default=False,
+                    pointer=">",
+                    instruction="(Up/Down to move, Enter to select)",
+                    use_shortcuts=False,
+                    use_jk_keys=False,
+                )
+            )
+        )
+
+    while True:
+        raw = input(f"{question} Enter 'a' for all or 'b' to go back: ").strip().casefold()
+        if raw in {"a", "all", "select all"}:
+            return True
+        if raw in {"b", "back", "go back"}:
+            return False
+        if raw in {"q", "quit", "exit"}:
+            raise KeyboardInterrupt
+        print("Please choose all or go back.")
+
+
 async def prompt_multi_choice(
     options: Sequence[object],
     label: str,
     label_getter=str,
-    *,
-    blank_means_none: bool = False,
 ) -> list[object]:
     if not options:
         return []
@@ -360,36 +391,36 @@ async def prompt_multi_choice(
             questionary.Choice(title=str(label_getter(option)), value=option, shortcut_key=False)
             for option in options
         ]
-        validation = (
-            (lambda selected: True)
-            if blank_means_none
-            else (lambda selected: bool(selected) or "Select at least one item.")
-        )
-        return list(
-            await _ask_console_question(
-                questionary.checkbox(
-                    label,
-                    choices=choices,
-                    pointer=">",
-                    instruction="(Up/Down to move, Space to toggle, A to toggle all, Enter to submit)",
-                    use_jk_keys=False,
-                    validate=validation,
+        while True:
+            selected = list(
+                await _ask_console_question(
+                    questionary.checkbox(
+                        label,
+                        choices=choices,
+                        pointer=">",
+                        instruction="(Up/Down to move, Space to toggle, A to toggle all, Enter to submit)",
+                        use_jk_keys=False,
+                        validate=lambda _selected: True,
+                    )
                 )
             )
-        )
+            if selected:
+                return selected
+            if await confirm_empty_multiselect():
+                return list(options)
 
     print(f"\n{label}")
     for index, option in enumerate(options, start=1):
         print(f"  {index}. {label_getter(option)}")
     hint = "Enter comma-separated numbers, 'a' for all"
-    if blank_means_none:
-        hint += ", or leave blank for no filtering"
     while True:
         raw = input(f"{hint} (or 'q' to quit): ").strip().casefold()
         if raw in {"q", "quit", "exit"}:
             raise KeyboardInterrupt
-        if not raw and blank_means_none:
-            return []
+        if not raw:
+            if await confirm_empty_multiselect():
+                return list(options)
+            continue
         if raw in {"a", "all"}:
             return list(options)
         indexes: list[int] = []
@@ -448,21 +479,27 @@ async def prompt_row_selection(available_rows: Sequence[str], label: str) -> lis
     if not available_rows:
         return []
     if _console_menu_available():
-        return list(
-            await _ask_console_question(
-                questionary.checkbox(
-                    label,
-                    choices=[
-                        questionary.Choice(title=row, value=row, shortcut_key=False)
-                        for row in available_rows
-                    ],
-                    pointer=">",
-                    instruction="(Up/Down to move, Space to toggle, A to toggle all, Enter to submit)",
-                    use_jk_keys=False,
-                    validate=lambda selected: bool(selected) or "Select at least one row.",
+        choices = [
+            questionary.Choice(title=row, value=row, shortcut_key=False)
+            for row in available_rows
+        ]
+        while True:
+            selected = list(
+                await _ask_console_question(
+                    questionary.checkbox(
+                        label,
+                        choices=choices,
+                        pointer=">",
+                        instruction="(Up/Down to move, Space to toggle, A to toggle all, Enter to submit)",
+                        use_jk_keys=False,
+                        validate=lambda _selected: True,
+                    )
                 )
             )
-        )
+            if selected:
+                return selected
+            if await confirm_empty_multiselect():
+                return list(available_rows)
 
     print(f"\n{label}")
     print(f"Available rows: {', '.join(available_rows)}")
@@ -470,6 +507,10 @@ async def prompt_row_selection(available_rows: Sequence[str], label: str) -> lis
         raw = input("Enter rows (example A,B,C,F-J), 'all' for every row (or 'q' to quit): ").strip()
         if raw.casefold() in {"q", "quit", "exit"}:
             raise KeyboardInterrupt
+        if not raw:
+            if await confirm_empty_multiselect():
+                return list(available_rows)
+            continue
         try:
             return parse_row_selection(raw, available_rows)
         except ValueError as exc:
@@ -1547,7 +1588,6 @@ async def run(args: argparse.Namespace) -> int:
                     experiences,
                     "Select experiences",
                     lambda option: option.label,
-                    blank_means_none=True,
                 )
             await select_experiences(page, selected_experiences)
             report["experiences"] = [option.label for option in selected_experiences]
