@@ -19,6 +19,7 @@ Key responsibilities:
 - parse Cineplex date labels into sortable `YYYY_MM_DD_Weekday` filename segments
 - discover available filters from the live site when possible
 - support later steps such as theater selection, experiences, dates, and preview-seat loops
+- orchestrate multiple theatres sequentially with independent filters, outputs, post-crawl filtering, and failure reporting
 - capture semantic seat-map metadata and filter screenshots by session, row, and adjacent-seat availability
 - detect and dismiss sold-out preview modals, report the skipped session, and continue later timeslots
 - provide reusable arrow-key single- and multi-select console prompts across the crawl and filtering stages
@@ -44,10 +45,11 @@ The regression tests in [tests/test_crawler.py](tests/test_crawler.py) validate 
 - schedule-period grouping and layout signatures
 - aisle-safe adjacent-seat detection
 - filtered/discarded file organization
+- multi-theatre selection, per-theatre isolation, and aggregate report behavior
 
 ## Configuration model
 The crawler reads settings from the environment and from a local .env file. The most important values are:
-- OUTPUT_DIR: root folder beneath which each run creates its own timestamp/movie/theatre screenshot directory
+- OUTPUT_DIR: root folder beneath which each selected theatre creates its own timestamp/movie/theatre screenshot directory
 - DOCUMENTATION_DIR: folder for documentation artifacts
 - MAX_DISTANCE_KM: theater distance threshold for filtering
 - HEADLESS: whether the browser runs headless

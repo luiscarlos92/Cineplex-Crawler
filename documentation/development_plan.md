@@ -29,7 +29,8 @@
 - Generated output and run reports have dedicated ignored locations; hand-written workflow documentation must never be overwritten by a crawler run.
 - Configuration is validated and resolved relative to the repository; environment variables override `.env`, and geolocation requires a complete latitude/longitude pair.
 - Movie, theatre, experience, and date discovery now use scoped live Tickets controls and structured Cineplex test IDs.
-- Theatre options include live IDs, cities, and distances and are filtered by the configured maximum distance.
+- Theatre options include live IDs, cities, and distances, are filtered by the configured maximum distance, and support interactive or CLI multi-selection.
+- Selected theatres run sequentially with independent experience/date discovery, output folders, screenshot filtering, and report entries; Tickets is reset and the movie restored between theatres to prevent filter leakage.
 - Key-driven terminal selections and optional command-line selections are implemented, including explicit `any` experiences and `all` dates. Interactive menus consistently use Up/Down, Space for multi-select, `A` to toggle all, and Enter to submit.
 - Empty checkbox submissions open an explicit `Select all` / `Go back` confirmation for experiences, dates, sessions, and rows; `Go back` is the safe default.
 - Questionary prompts use its asynchronous API on Playwright's existing event loop; a real keypress regression test protects against nested `asyncio.run()` failures.
@@ -38,6 +39,7 @@
 - Every execution writes a timestamped JSON report without modifying the hand-written workflow notes.
 - Every invocation creates a unique `YYYYMMDD-HHMMSS-MovieName-TheatreName` screenshot subfolder beneath the configured output root.
 - A bounded live run captured and visually verified two different timeslots from the same `UltraAVX + D-BOX` preview group.
+- A bounded multi-theatre live run captured one preview each at Vaughan and Yonge-Eglinton after a clean Tickets/movie reset between theatres.
 - Seat-preview captures hide Cineplex's fixed bottom action sheet after every preview load and timeslot rerender so it cannot cover seats or the legend.
 - Seat-map readiness waits for Cineplex's popcorn loader and dimming overlay to remain absent, preventing stale or darkened screenshots during timeslot changes.
 - Sold-out preview modals are detected during seat-map readiness, dismissed through `Change showtime`, reported as skipped sessions, and no longer block later timeslots.
@@ -54,7 +56,7 @@
 - The live site structure may change and may require selectors to be adjusted.
 - Movie, theatre, experience, and date availability is dynamic and depends on Cineplex, the configured location, and the current time.
 - Cineplex injects its consent layer asynchronously; the crawler handles the current OneTrust implementation at initial navigation and after Tickets opens.
-- A failed preview group currently stops the run after recording the failure, avoiding uncertain browser-state recovery and accidental traversal of the wrong session.
+- A failed preview group stops the current theatre after recording the failure. Every subsequent selected theatre starts after Tickets is reloaded and the movie restored, avoiding both uncertain browser state and inherited filters.
 - Accurate post-crawl filtering requires the seat metadata captured by this version; older screenshot-only runs are not automatically image-classified.
 
 ## Next recommended step

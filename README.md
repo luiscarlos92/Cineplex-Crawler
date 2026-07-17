@@ -27,7 +27,7 @@ python crawler.py
 
 The crawler uses a consistent key-driven console menu for every interactive
 choice. Use Up/Down to move, Space to toggle items in multi-select menus, `A`
-to select or clear all items, and Enter to submit. This covers movie, theatre,
+to select or clear all items, and Enter to submit. This covers movie, theatres,
 experiences, dates, post-crawl continue/stop, format/timeslot filtering, ticket
 count, and acceptable rows.
 Submitting any multi-select menu without choosing an item opens a confirmation:
@@ -40,6 +40,7 @@ Selections can also be supplied on the command line:
 python crawler.py `
   --movie "The Odyssey" `
   --theatre "Yonge-Eglinton" `
+  --theatre "Vaughan" `
   --experience "IMAX" `
   --date "Tomorrow" `
   --headless
@@ -48,7 +49,9 @@ python crawler.py `
 Useful safety and validation options include:
 
 - `--dry-run`: complete discovery and selection without opening seat previews.
-- `--max-screenshots N`: stop after `N` successful captures.
+- `--max-screenshots N`: stop after `N` successful captures per theatre.
+- Repeat `--theatre`, comma-separate names, or use `--theatre all` to process
+  multiple nearby theatres.
 - `--experience any`: do not restrict results by experience.
 - `--all-dates` or `--date all`: process every date exposed by Cineplex.
 - `--max-distance-km N`: override the configured theatre-distance threshold.
@@ -61,8 +64,30 @@ screenshots go to `output/`; timestamped machine-readable run reports go to
 `documentation/run_reports/`. Existing screenshots are never overwritten—a
 numeric suffix is added when a filename already exists.
 
-Each invocation creates a descriptive folder under the configured `OUTPUT_DIR`
-using `YYYYMMDD-HHMMSS-MovieName-TheatreName`, for example
+## Multiple theatres
+
+The movie is chosen once, then the selected theatres are processed
+sequentially. Before each theatre after the first, the crawler reloads Tickets
+and restores that movie so Cineplex cannot carry experience filters across
+cinemas. Experience/format and date choices are requested separately for each
+theatre because availability and schedules can differ by location. Command-line
+`--experience` and `--date` values are reapplied to each theatre; if a requested
+value is unavailable, that theatre records an error and the crawler continues
+with the next theatre when browser-state recovery succeeds.
+
+Each theatre receives its own
+`YYYYMMDD-HHMMSS-MovieName-TheatreName` output directory. Post-crawl filtering
+also runs independently per theatre, so auditorium layouts, rows, formats, and
+seat availability are never mixed between cinemas. `--filter` or `--no-filter`
+applies to every theatre; without either option, the crawler asks after each
+theatre crawl.
+
+The JSON report stores one entry per theatre under `theatre_runs`, plus
+top-level aggregate captures, sold-out skips, and errors. Single-theatre runs
+retain the previous top-level compatibility fields.
+
+Each selected theatre creates a descriptive folder under the configured
+`OUTPUT_DIR` using `YYYYMMDD-HHMMSS-MovieName-TheatreName`, for example
 `output/20260717-031530-The_Odyssey-Cineplex_Yonge-Eglinton/`. If two otherwise
 identical runs start within the same second, the later folder receives a numeric
 suffix.
@@ -88,8 +113,8 @@ do not create screenshots and do not stop the crawl.
 
 ## Post-crawl filtering
 
-After a successful crawl, the crawler asks whether to continue with screenshot
-filtering. If accepted, it:
+After each successful theatre crawl, the crawler asks whether to continue with
+screenshot filtering for that theatre. If accepted, it:
 
 1. Condenses captured sessions by format and consecutive date ranges that have
    the same schedule, then asks for a multi-selection of format/timeslot choices.

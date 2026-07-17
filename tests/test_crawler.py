@@ -149,6 +149,57 @@ def test_named_choice_requires_a_unique_match():
         crawler._match_named_choice("Toronto", options, str)
 
 
+def _theatre(theatre_id, name, distance):
+    return crawler.TheatreOption(theatre_id, name, "Toronto", distance)
+
+
+def test_theatre_cli_supports_repeated_comma_separated_and_all_values():
+    args = crawler.build_parser().parse_args(
+        ["--theatre", "Vaughan,Yonge-Eglinton", "--theatre", "Varsity"]
+    )
+
+    assert crawler._split_cli_values(args.theatre) == [
+        "Vaughan",
+        "Yonge-Eglinton",
+        "Varsity",
+    ]
+
+
+def test_choose_theatres_matches_multiple_deduplicates_and_supports_all():
+    theatres = [
+        _theatre("1", "Cineplex Vaughan", 14),
+        _theatre("2", "Cineplex Yonge-Eglinton", 1),
+        _theatre("3", "Cineplex Varsity", 2),
+    ]
+
+    selected = asyncio.run(
+        crawler.choose_theatres(
+            theatres,
+            ["Vaughan", "Varsity", "Vaughan"],
+            dry_run=False,
+        )
+    )
+    all_theatres = asyncio.run(crawler.choose_theatres(theatres, ["all"], dry_run=False))
+
+    assert selected == [theatres[0], theatres[2]]
+    assert all_theatres == theatres
+
+
+def test_choose_theatres_uses_interactive_multiselect(monkeypatch):
+    theatres = [
+        _theatre("1", "Cineplex Vaughan", 14),
+        _theatre("2", "Cineplex Varsity", 2),
+    ]
+    fake = _FakeQuestionary([theatres])
+    monkeypatch.setattr(crawler, "questionary", fake)
+    monkeypatch.setattr(crawler, "_console_menu_available", lambda: True)
+
+    selected = asyncio.run(crawler.choose_theatres(theatres, [], dry_run=False))
+
+    assert selected == theatres
+    assert fake.calls[0][0:2] == ("checkbox", "Select theatres")
+
+
 class _FakeQuestion:
     def __init__(self, answer):
         self.answer = answer
@@ -269,6 +320,329 @@ def test_redirected_empty_multiselect_requires_all_or_back_confirmation(monkeypa
     selected = asyncio.run(crawler.prompt_multi_choice(options, "Select dates"))
 
     assert selected == options
+
+
+def test_multiple_theatres_get_independent_outputs_filters_and_report_entries(monkeypatch, tmp_path):
+    theatres = [
+        _theatre("1", "Cineplex Vaughan", 14),
+        _theatre("2", "Cineplex Varsity", 2),
+    ]
+    selected_theatres = []
+    filter_calls = []
+
+    async def fake_select_theatre(_page, theatre):
+        selected_theatres.append(theatre.name)
+
+    async def fake_choose_experiences(_page, theatre, _cli_values, *, dry_run):
+        assert dry_run is False
+        return [crawler.ExperienceOption(f"IMAX at {theatre.name}", "aria")]
+
+    async def fake_select_experiences(_page, _experiences):
+        return None
+
+    async def fake_choose_dates(_page, theatre, _cli_values, *, all_dates, dry_run):
+        assert all_dates is False
+        assert dry_run is False
+        return [crawler.DateOption("date-0", f"Today at {theatre.name}")]
+
+    async def fake_preview_loop(_page, _movie, theatre, _dates, config, _maximum):
+        return ([{"theatre": theatre.name, "output_dir": str(config.output_dir)}], [], [])
+
+    async def fake_filter(run_dir, captures):
+        filter_calls.append((run_dir, captures[0]["theatre"]))
+        return {"status": "complete"}
+
+    monkeypatch.setattr(crawler, "select_theatre", fake_select_theatre)
+    monkeypatch.setattr(crawler, "choose_experiences_for_theatre", fake_choose_experiences)
+    monkeypatch.setattr(crawler, "select_experiences", fake_select_experiences)
+    monkeypatch.setattr(crawler, "choose_dates_for_theatre", fake_choose_dates)
+    monkeypatch.setattr(crawler, "run_preview_loop", fake_preview_loop)
+    monkeypatch.setattr(crawler, "filter_captures_interactively", fake_filter)
+
+    config = crawler.Config(
+        output_dir=tmp_path / "output",
+        documentation_dir=tmp_path / "documentation",
+        max_distance_km=50,
+        headless=True,
+        browser_channel=None,
+        locale="en-CA",
+        timezone_id="America/Toronto",
+        latitude=None,
+        longitude=None,
+        geolocation_accuracy_meters=100,
+    )
+    args = crawler.build_parser().parse_args(["--filter"])
+    movie = crawler.MovieOption("The Odyssey", "The Odyssey")
+    started_at = datetime(2026, 7, 17, 12, 0, tzinfo=timezone.utc)
+
+    async def process_both():
+        return [
+            await crawler.process_theatre(
+                object(),
+                movie,
+                theatre,
+                config,
+                started_at,
+                args,
+                [],
+                [],
+            )
+            for theatre in theatres
+        ]
+
+    theatre_runs = asyncio.run(process_both())
+    report = {"captures": [], "skipped_sessions": [], "errors": []}
+    crawler.finalize_theatre_runs(report, theatre_runs)
+
+    assert selected_theatres == ["Cineplex Vaughan", "Cineplex Varsity"]
+    assert len({run["output_dir"] for run in theatre_runs}) == 2
+    assert all(run["status"] == "complete" for run in theatre_runs)
+    assert [name for _directory, name in filter_calls] == selected_theatres
+    assert report["status"] == "complete"
+    assert report["output_dir"] is None
+    assert len(report["output_dirs"]) == 2
+    assert len(report["captures"]) == 2
+
+
+def test_selected_theatres_reset_movie_context_between_each_run(monkeypatch, tmp_path):
+    theatres = [
+        _theatre("1", "Cineplex Vaughan", 14),
+        _theatre("2", "Cineplex Varsity", 2),
+        _theatre("3", "Cineplex Yonge-Eglinton", 1),
+    ]
+    events = []
+
+    async def fake_restore(_page, _movie):
+        events.append("reset")
+
+    async def fake_process(
+        _page,
+        _movie,
+        theatre,
+        _config,
+        _started_at,
+        _args,
+        _experiences,
+        _dates,
+    ):
+        events.append(theatre.name)
+        return {
+            "theatre": {"name": theatre.name},
+            "status": "complete",
+            "output_dir": theatre.name,
+            "experiences": [],
+            "dates": [],
+            "captures": [],
+            "skipped_sessions": [],
+            "errors": [],
+        }
+
+    monkeypatch.setattr(crawler, "restore_movie_for_next_theatre", fake_restore)
+    monkeypatch.setattr(crawler, "process_theatre", fake_process)
+    config = crawler.Config(
+        output_dir=tmp_path / "output",
+        documentation_dir=tmp_path / "documentation",
+        max_distance_km=50,
+        headless=True,
+        browser_channel=None,
+        locale="en-CA",
+        timezone_id="America/Toronto",
+        latitude=None,
+        longitude=None,
+        geolocation_accuracy_meters=100,
+    )
+
+    runs = asyncio.run(
+        crawler.process_selected_theatres(
+            object(),
+            crawler.MovieOption("The Odyssey", "The Odyssey"),
+            theatres,
+            config,
+            datetime(2026, 7, 17, tzinfo=timezone.utc),
+            crawler.build_parser().parse_args([]),
+            [],
+            [],
+        )
+    )
+
+    assert events == [
+        "Cineplex Vaughan",
+        "reset",
+        "Cineplex Varsity",
+        "reset",
+        "Cineplex Yonge-Eglinton",
+    ]
+    assert len(runs) == 3
+
+
+def test_theatre_report_preserves_failure_without_losing_successful_captures():
+    report = {"captures": [], "skipped_sessions": [], "errors": []}
+    theatre_runs = [
+        {
+            "theatre": {"name": "Cineplex Vaughan"},
+            "status": "complete",
+            "output_dir": "vaughan",
+            "experiences": ["IMAX"],
+            "dates": ["Today"],
+            "captures": [{"path": "one.png"}],
+            "skipped_sessions": [],
+            "errors": [],
+        },
+        {
+            "theatre": {"name": "Cineplex Varsity"},
+            "status": "failed",
+            "output_dir": "varsity",
+            "experiences": [],
+            "dates": [],
+            "captures": [],
+            "skipped_sessions": [],
+            "errors": [{"error": "selector changed"}],
+        },
+    ]
+
+    crawler.finalize_theatre_runs(report, theatre_runs)
+
+    assert report["status"] == "complete-with-errors"
+    assert report["captures"] == [{"path": "one.png"}]
+    assert report["errors"] == [
+        {"theatre": "Cineplex Varsity", "error": "selector changed"}
+    ]
+
+
+class _FakeFilterControl:
+    def __init__(self, *, enabled=True):
+        self.enabled = enabled
+        self.clicks = 0
+
+    @property
+    def last(self):
+        return self
+
+    async def count(self):
+        return 1
+
+    async def is_enabled(self):
+        return self.enabled
+
+    async def click(self):
+        self.clicks += 1
+
+    async def wait_for(self, **_kwargs):
+        return None
+
+
+class _FakeFilterDialog:
+    def __init__(self):
+        self.clear = _FakeFilterControl()
+        self.apply = _FakeFilterControl()
+        self.back = _FakeFilterControl()
+
+    def get_by_role(self, role, *, name, exact):
+        assert role == "button"
+        assert exact is True
+        if name == "Clear All":
+            return self.clear
+        if name == "Apply":
+            return self.apply
+        raise AssertionError(name)
+
+    def get_by_test_id(self, test_id):
+        assert test_id == "back-button"
+        return self.back
+
+
+class _FakeFilterPage:
+    def __init__(self):
+        self.dialog = _FakeFilterDialog()
+        self.select_date = _FakeFilterControl()
+
+    def get_by_role(self, role, *, name):
+        assert role == "dialog"
+        assert name == "Filter"
+        return self.dialog
+
+    def get_by_test_id(self, test_id):
+        assert test_id == "select-date"
+        return self.select_date
+
+
+def test_empty_experience_selection_leaves_filter_drawer_without_invalid_apply():
+    page = _FakeFilterPage()
+
+    asyncio.run(crawler.select_experiences(page, []))
+
+    assert page.dialog.back.clicks == 1
+    assert page.dialog.clear.clicks == 0
+    assert page.dialog.apply.clicks == 0
+
+
+class _FakeTheatreDialog:
+    def __init__(self):
+        self.visible = False
+        self.search = _FakeFilterControl()
+        self.theatre = _FakeFilterControl()
+
+    @property
+    def first(self):
+        return self
+
+    async def count(self):
+        return 1
+
+    async def is_visible(self):
+        return self.visible
+
+    def get_by_placeholder(self, placeholder):
+        assert placeholder == "Search by theatres or cities"
+        return self.search
+
+    def get_by_test_id(self, test_id):
+        assert test_id == "theatre-id-7408"
+        return self.theatre
+
+
+class _FakeTheatreSelectControl(_FakeFilterControl):
+    def __init__(self, dialog):
+        super().__init__()
+        self.dialog = dialog
+
+    async def click(self):
+        await super().click()
+        self.dialog.visible = True
+
+
+class _FakeTheatrePage:
+    def __init__(self):
+        self.dialog = _FakeTheatreDialog()
+        self.selector = _FakeTheatreSelectControl(self.dialog)
+        self.filters = _FakeFilterControl()
+        self.waits = []
+
+    def get_by_role(self, role, *, name):
+        assert role == "dialog"
+        assert name == "Select a theatre"
+        return self.dialog
+
+    def get_by_test_id(self, test_id):
+        if test_id == "select-theatre":
+            return self.selector
+        if test_id == "select-filters":
+            return self.filters
+        raise AssertionError(test_id)
+
+    async def wait_for_timeout(self, milliseconds):
+        self.waits.append(milliseconds)
+
+
+def test_select_theatre_reopens_drawer_between_theatre_runs():
+    page = _FakeTheatrePage()
+    theatre = crawler.TheatreOption("7408", "Cineplex Vaughan", "Vaughan", 14)
+
+    asyncio.run(crawler.select_theatre(page, theatre))
+
+    assert page.selector.clicks == 1
+    assert page.dialog.theatre.clicks == 1
+    assert page.waits == [700]
 
 
 def test_real_questionary_widgets_accept_prompt_configuration(monkeypatch):

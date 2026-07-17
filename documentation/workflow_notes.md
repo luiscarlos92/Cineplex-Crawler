@@ -8,6 +8,7 @@ This document preserves the documentation-only workflow for the Cineplex browser
 - Screenshots captured during the workflow are already stored in the workspace under the documentation screenshots folder.
 - The automated workflow has been live-validated through movie, theatre, experience, and date selection.
 - A bounded end-to-end run opened the seat-preview page, selected both the first and second timeslots, captured complete seat maps, and returned to Tickets without entering checkout.
+- A bounded multi-theatre run reset Tickets between cinemas and captured one seat map each for Vaughan and Yonge-Eglinton without mixing filters or output directories.
 - The crawler uses Cineplex's structured test IDs for the core workflow rather than scanning arbitrary body text.
 
 ## Detailed workflow
@@ -25,16 +26,16 @@ This document preserves the documentation-only workflow for the Cineplex browser
 8. Collect all theaters, including their name, city, and visible distance.
    - Filter to entries below the configured threshold.
    - Environment variable: MAX_DISTANCE_KM=50
-9. Wait for manual theater selection.
-   - Assume one theater is selected.
-10. Click the chosen theater.
-11. Open the filters panel.
-12. Extract all available experiences.
-13. Wait for manual experience selection.
+9. Wait for manual theatre multi-selection.
+   - Support one or more theatres, plus the visible toggle-all action.
+10. Start the loop over selected theatres.
+11. Click the current theatre.
+12. Open the filters panel and extract the experiences available at that theatre.
+13. Wait for a theatre-specific manual experience selection.
    - Use Up/Down to navigate, Space to toggle multiple options, `A` to select or clear all options, and Enter to submit.
    - If Enter is pressed with nothing selected, ask whether to `Select all` or `Go back`; default to `Go back`.
 14. Apply the selected experiences.
-15. Open the dates selector and export all visible dates.
+15. Open the dates selector and export all dates visible for the current theatre.
    - Provide a visible `A` action that selects or clears ALL DATES and updates every checkbox.
 16. Start the loop over the selected dates.
    - For each selected date:
@@ -48,10 +49,10 @@ This document preserves the documentation-only workflow for the Cineplex browser
      - Continue until all timeslots are processed.
      - Return to the previous view and continue to the next Preview Seats group.
      - When all preview seats are done, return to the date list and continue to the next date.
-17. End with a success or failure result and the output folder destination.
-   - `OUTPUT_DIR` is the root; each invocation creates `YYYYMMDD-HHMMSS-MovieName-TheatreName` beneath it.
-18. Ask whether to continue with post-crawl filtering.
-   - If no, leave the captured screenshots in the run directory and finish.
+17. End the current theatre with a success or failure result and its output folder destination.
+   - `OUTPUT_DIR` is the root; each selected theatre creates `YYYYMMDD-HHMMSS-MovieName-TheatreName` beneath it.
+18. Ask whether to continue with post-crawl filtering for the current theatre.
+   - If no, leave the captured screenshots in that theatre's run directory and continue the theatre loop.
    - If yes:
      - Group consecutive dates that share the same captured timeslot schedule for each format.
      - Present each format/timeslot/date-period combination as a separate arrow-key multi-select option.
@@ -63,6 +64,9 @@ This document preserves the documentation-only workflow for the Cineplex browser
        - A redirected-input fallback accepts row letters and inclusive ranges such as `A,B,C,F-J` or `AA-DD`.
      - Keep a screenshot if at least one selected row contains the requested number of adjacent available ordinary seats.
      - Move kept screenshots to `filtered/` and all other captures to `discarded/` within the run directory.
+19. Return to theatre selection state and repeat steps 11-18 for the next selected theatre.
+   - Reload Tickets and restore the movie before every subsequent theatre so Cineplex cannot carry experience filters between cinemas.
+   - If one theatre fails, record its error and still attempt the clean reset for the next theatre.
 
 ## Suggested environment variables
 - MAX_DISTANCE_KM=50
@@ -97,10 +101,10 @@ The following screenshots are already present in the workspace and should be tre
 ## Notes
 - The workflow remains in the originally requested order, with manual selection points implemented as terminal menus.
 - `--dry-run` validates discovery and selections without opening a seat preview.
-- `--max-screenshots` allows a bounded end-to-end validation run.
+- `--max-screenshots` allows a bounded end-to-end validation run per theatre.
 - Each execution writes a timestamped JSON report under `documentation/run_reports/`, including status, selections, captures, and failures.
-- Each execution writes screenshots into a new `YYYYMMDD-HHMMSS-MovieName-TheatreName` directory beneath `OUTPUT_DIR`; runs never share a screenshot directory.
-- After capture, filtering is offered interactively. `--filter` accepts it without the initial question and `--no-filter` skips it.
+- Each selected theatre writes screenshots into its own `YYYYMMDD-HHMMSS-MovieName-TheatreName` directory beneath `OUTPUT_DIR`; theatres never share a screenshot directory.
+- After each theatre capture, filtering is offered interactively. `--filter` accepts it for every theatre and `--no-filter` skips it for every theatre.
 
 ## Implementation decisions
 
@@ -108,6 +112,7 @@ The following screenshots are already present in the workspace and should be tre
 - Empty multi-select submissions are never accepted silently. A follow-up offers `Select all` or `Go back`, with `Go back` as the safe default.
 - Interactive menus await Questionary on the crawler's existing asyncio loop. They must not call the synchronous prompt API, which would try to start a second event loop while Playwright is running.
 - Nearby-theatre results use an explicit browser geolocation when `LATITUDE` and `LONGITUDE` are configured; both must be set together.
+- Experience and date discovery runs inside the theatre loop. Tickets is reloaded and the movie restored before each subsequent theatre, and post-crawl seat filtering never combines different theatres.
 - The crawler stops at the seat-preview screen. It must not click `Buy Tickets`, select a seat, or enter checkout.
 - Hand-written files in `documentation/` are preserved. Each execution writes a separate machine-readable report under `documentation/run_reports/`.
 - Exploratory scripts and captured HTML/JSON remain in the workspace while the production workflow is completed.
@@ -124,6 +129,14 @@ Validation performed on July 16, 2026 (America/Toronto):
 6. Opened the `UltraAVX + D-BOX` preview group and captured the 2:00 PM and 6:00 PM seat maps.
 7. Verified that the second capture had the 6:00 PM timeslot selected and showed its distinct seat availability.
 8. Exited through the preview close control; `Buy Tickets` was never clicked.
+
+Multi-theatre validation performed on July 17, 2026 (America/Toronto):
+
+1. Selected `The Odyssey` once and resolved both `Cineplex Cinemas Vaughan` and `Cineplex Cinemas Yonge-Eglinton and VIP` from repeatable CLI theatre values.
+2. Completed a two-theatre dry run with independent experience and date discovery.
+3. Completed a bounded live run with `--max-screenshots 1`, capturing one `UltraAVX + D-BOX` preview at each theatre.
+4. Reloaded Tickets and restored the movie between theatres; the second theatre began without the first theatre's experience-filter state.
+5. Created separate timestamp/movie/theatre output directories and a report containing two `theatre_runs` entries.
 
 ## Screenshot cleanup
 
