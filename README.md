@@ -48,6 +48,8 @@ Useful safety and validation options include:
 - `--all-dates` or `--date all`: process every date exposed by Cineplex.
 - `--max-distance-km N`: override the configured theatre-distance threshold.
 - `--headless` / `--no-headless`: override the `.env` browser mode.
+- `--filter` / `--no-filter`: enter or skip post-crawl filtering without the
+  initial yes/no question. The default asks after every successful crawl.
 
 Run `python crawler.py --help` for the complete option list. Generated
 screenshots go to `output/`; timestamped machine-readable run reports go to
@@ -63,6 +65,31 @@ suffix.
 Immediately before each capture, the crawler hides Cineplex's fixed `Copy Link`
 / `Buy Tickets` action sheet so it does not cover the seat map. This cleanup is
 reapplied after every timeslot change.
+
+## Post-crawl filtering
+
+After a successful crawl, the crawler asks whether to continue with screenshot
+filtering. If accepted, it:
+
+1. Condenses captured sessions by format and consecutive date ranges that have
+   the same schedule, then asks for a multi-selection of format/timeslot choices.
+2. Asks how many side-by-side tickets are required.
+3. Detects distinct auditorium layouts and asks for acceptable rows once per
+   format/layout combination.
+4. Keeps a screenshot when at least one selected row contains the requested
+   number of adjacent available ordinary seats.
+5. Moves matches to `filtered/` and all leftovers to `discarded/` inside the run
+   directory.
+
+Seat filtering uses semantic metadata captured from the live seat map, including
+seat type, availability, row, number, and rendered position. This is more robust
+than color-only image recognition. D-BOX, wheelchair, and companion positions
+are excluded; Standard and sofa/recliner seats count. Consecutive numbering and
+rendered spacing are both required, so seats separated by an aisle do not count
+as side by side.
+
+The run report records all filter choices, detected layouts and rows,
+qualifying seat blocks, move reasons, and final screenshot paths.
 
 After the editable install, `cineplex-crawler` can be used in place of
 `python crawler.py`.

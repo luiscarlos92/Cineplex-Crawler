@@ -47,6 +47,16 @@ This document preserves the documentation-only workflow for the Cineplex browser
      - When all preview seats are done, return to the date list and continue to the next date.
 17. End with a success or failure result and the output folder destination.
    - `OUTPUT_DIR` is the root; each invocation creates `YYYYMMDD-HHMMSS-MovieName-TheatreName` beneath it.
+18. Ask whether to continue with post-crawl filtering.
+   - If no, leave the captured screenshots in the run directory and finish.
+   - If yes:
+     - Group consecutive dates that share the same captured timeslot schedule for each format.
+     - Present each format/timeslot/date-period combination as a separate multi-select option.
+     - Ask for the required number of side-by-side tickets.
+     - Detect distinct auditorium layouts from the captured seat metadata.
+     - For each format/layout combination, display its detected rows and ask for a row multi-selection.
+     - Keep a screenshot if at least one selected row contains the requested number of adjacent available ordinary seats.
+     - Move kept screenshots to `filtered/` and all other captures to `discarded/` within the run directory.
 
 ## Suggested environment variables
 - MAX_DISTANCE_KM=50
@@ -84,6 +94,7 @@ The following screenshots are already present in the workspace and should be tre
 - `--max-screenshots` allows a bounded end-to-end validation run.
 - Each execution writes a timestamped JSON report under `documentation/run_reports/`, including status, selections, captures, and failures.
 - Each execution writes screenshots into a new `YYYYMMDD-HHMMSS-MovieName-TheatreName` directory beneath `OUTPUT_DIR`; runs never share a screenshot directory.
+- After capture, filtering is offered interactively. `--filter` accepts it without the initial question and `--no-filter` skips it.
 
 ## Implementation decisions
 
@@ -112,4 +123,13 @@ Validation performed on July 16, 2026 (America/Toronto):
 - Before every screenshot, the crawler hides the action sheet's full-width wrapper using the stable `bottom-sheet` test ID.
 - The cleanup runs after entering each Preview Seats page and again after every timeslot switch because the live page may recreate the element during a rerender.
 - Only the obstructing action sheet is hidden; the movie details, timeslot controls, seat map, legend, and availability state remain unchanged.
+
+## Seat availability filtering
+
+- Every screenshot record includes a semantic snapshot of the live seat map: type, availability, row, seat number, and rendered coordinates.
+- Ordinary seating includes Standard and sofa/recliner types. D-BOX, wheelchair, and companion positions are excluded from side-by-side calculations.
+- Seats must have consecutive numbers and normal rendered spacing. This prevents adjacency from crossing an aisle.
+- Auditorium layout signatures ignore occupancy, so different timeslots in the same room share one row prompt. A genuinely different seating layout produces a separate prompt.
+- Schedule periods are derived from captured data rather than assumed. Consecutive dates with identical times are condensed; a schedule change starts a new period.
+- The JSON run report records the selected sessions, ticket count, selected rows, qualifying seat blocks, kept/discarded reasons, and final paths.
 

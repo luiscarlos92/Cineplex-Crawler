@@ -36,6 +36,9 @@
 - Every invocation creates a unique `YYYYMMDD-HHMMSS-MovieName-TheatreName` screenshot subfolder beneath the configured output root.
 - A bounded live run captured and visually verified two different timeslots from the same `UltraAVX + D-BOX` preview group.
 - Seat-preview captures hide Cineplex's fixed bottom action sheet after every preview load and timeslot rerender so it cannot cover seats or the legend.
+- Each capture stores semantic seat-map metadata for accurate row, type, occupancy, and adjacency analysis.
+- The post-crawl filter condenses timeslot schedules by format/date period, prompts for ticket count and rows per detected layout, then moves screenshots into `filtered/` or `discarded/`.
+- Side-by-side detection excludes D-BOX and accessibility positions and checks both consecutive numbering and rendered spacing to avoid crossing aisles.
 - The deterministic regression suite covers configuration, normalization, parsing, naming, collision handling, and selection matching; a live smoke test is opt-in.
 
 ### In progress
@@ -47,6 +50,7 @@
 - Movie, theatre, experience, and date availability is dynamic and depends on Cineplex, the configured location, and the current time.
 - Cineplex injects its consent layer asynchronously; the crawler handles the current OneTrust implementation at initial navigation and after Tickets opens.
 - A failed preview group currently stops the run after recording the failure, avoiding uncertain browser-state recovery and accidental traversal of the wrong session.
+- Accurate post-crawl filtering requires the seat metadata captured by this version; older screenshot-only runs are not automatically image-classified.
 
 ## Next recommended step
 Run the crawler interactively with the desired real selections. Start with `--max-screenshots 2` for a bounded confirmation, then remove the limit when the output and selection set are correct.

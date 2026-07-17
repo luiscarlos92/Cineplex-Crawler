@@ -18,6 +18,7 @@ Key responsibilities:
 - build output paths for screenshots
 - discover available filters from the live site when possible
 - support later steps such as theater selection, experiences, dates, and preview-seat loops
+- capture semantic seat-map metadata and filter screenshots by session, row, and adjacent-seat availability
 
 ### probe_cineplex.py
 The lightweight probe script in [probe_cineplex.py](../probe_cineplex.py) is a smoke-test for the live Cineplex homepage. Its job is simpler than the crawler:
@@ -31,9 +32,13 @@ This script is useful as a basic reachability check and as a source of evidence 
 
 ### tests/test_crawler.py
 The regression tests in [tests/test_crawler.py](tests/test_crawler.py) validate core logic in the crawler without requiring a live browser session. They cover:
-- duplicate and blank filter cleanup
-- target URL generation
-- fallback selection behavior when no explicit values are provided
+- configuration validation and path resolution
+- filter normalization, date/time parsing, and output naming
+- timestamped run-folder collision handling
+- seat-type parsing and ordinary-seat classification
+- schedule-period grouping and layout signatures
+- aisle-safe adjacent-seat detection
+- filtered/discarded file organization
 
 ## Configuration model
 The crawler reads settings from the environment and from a local .env file. The most important values are:
@@ -49,17 +54,15 @@ The current codebase already includes:
 - a crawler module with helper functions and configuration handling
 - regression tests for the core helpers
 - a documentation folder for workflow notes and screenshots
+- post-crawl organization into filtered and discarded subfolders using live seat metadata
 
-The current state is best described as a documented foundation rather than a fully completed end-to-end automation flow. The next implementation phase would be to wire the remaining interactive UI steps for:
-- movie selection
-- theater filtering
-- experience selection
-- date selection
-- preview-seat and timeslot looping
-- screenshot capture with the requested file naming pattern
+The crawler implements the complete documented interactive flow: live discovery,
+movie/theatre/experience/date selection, preview and timeslot traversal,
+unobstructed screenshot capture, semantic seat-map collection, and optional
+post-crawl filtering.
 
 ## How to use this codebase
 1. Review the workflow notes in [documentation/workflow_notes.md](workflow_notes.md).
 2. Adjust the values in [.env](../.env) if needed.
-3. Run the probe script to verify the homepage before using the crawler.
-4. Keep the documentation folder in sync as the workflow evolves.
+3. Run `python crawler.py` for the interactive workflow, or review the CLI options with `python crawler.py --help`.
+4. Use the probe or opt-in live test when diagnosing live-site selector changes.

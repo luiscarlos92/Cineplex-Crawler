@@ -118,3 +118,108 @@ def test_build_target_url_uses_live_movie_page():
 
 def test_resolve_selection_falls_back_to_defaults_when_empty():
     assert crawler.resolve_selection([], ["One", "Two", "Three"]) == ["One", "Two", "Three"]
+
+
+def _seat(test_id, x, y=100):
+    seat = crawler.parse_seat_test_id(test_id)
+    assert seat is not None
+    seat.update({"x": x, "y": y, "width": 20.0, "height": 20.0})
+    return seat
+
+
+def test_parse_seat_test_id_distinguishes_ordinary_and_special_seats():
+    standard = _seat("Standard-available-seat-A12", 0)
+    sofa = _seat("SofaLeft-available-seat-A11", 20)
+    dbox = _seat("Dbox-available-seat-A10", 40)
+    companion = _seat("Companion-available-seat-AC9", 60)
+
+    assert standard["row"] == "A"
+    assert standard["number"] == 12
+    assert crawler.is_ordinary_seat(standard)
+    assert crawler.is_ordinary_seat(sofa)
+    assert not crawler.is_ordinary_seat(dbox)
+    assert not crawler.is_ordinary_seat(companion)
+
+
+def test_adjacent_blocks_exclude_occupied_special_and_across_aisle_seats():
+    seats = [
+        _seat("Standard-available-seat-A1", 0),
+        _seat("Standard-available-seat-A2", 20),
+        _seat("Standard-occupied-seat-A3", 40),
+        _seat("Standard-available-seat-A4", 60),
+        _seat("Standard-available-seat-A5", 80),
+        # Consecutive numbers, but the rendered gap represents an aisle.
+        _seat("Standard-available-seat-A6", 140),
+        _seat("Standard-available-seat-A7", 160),
+        _seat("Dbox-available-seat-A8", 180),
+    ]
+
+    blocks = crawler.find_adjacent_seat_blocks(seats, {"A"}, 2)
+
+    assert [block["seats"] for block in blocks] == [["A1", "A2"], ["A4", "A5"], ["A6", "A7"]]
+    assert crawler.find_adjacent_seat_blocks(seats, {"A"}, 3) == []
+
+
+def test_timeslot_choices_split_when_schedule_changes():
+    captures = [
+        {"format": "IMAX", "date": "Friday — July 17, 2026", "timeslot": "11:00 AM"},
+        {"format": "IMAX", "date": "Friday — July 17, 2026", "timeslot": "3:00 PM"},
+        {"format": "IMAX", "date": "Saturday — July 18, 2026", "timeslot": "11:00 AM"},
+        {"format": "IMAX", "date": "Saturday — July 18, 2026", "timeslot": "3:00 PM"},
+        {"format": "IMAX", "date": "Sunday — July 19, 2026", "timeslot": "12:00 PM"},
+        {"format": "IMAX", "date": "Sunday — July 19, 2026", "timeslot": "4:00 PM"},
+    ]
+
+    choices = crawler.build_timeslot_choices(captures)
+
+    assert [choice.timeslot for choice in choices] == ["11:00 AM", "3:00 PM", "12:00 PM", "4:00 PM"]
+    assert choices[0].period_labels == ("Friday — July 17, 2026", "Saturday — July 18, 2026")
+    assert choices[2].period_labels == ("Sunday — July 19, 2026",)
+
+
+def test_interactive_filter_moves_matches_and_leftovers(monkeypatch, tmp_path):
+    run_dir = tmp_path / "run"
+    run_dir.mkdir()
+    first_path = run_dir / "first.png"
+    second_path = run_dir / "second.png"
+    first_path.write_bytes(b"first")
+    second_path.write_bytes(b"second")
+    available_layout = [
+        _seat("Standard-available-seat-A1", 0),
+        _seat("Standard-available-seat-A2", 20),
+    ]
+    unavailable_layout = [
+        _seat("Standard-available-seat-A1", 0),
+        _seat("Standard-occupied-seat-A2", 20),
+    ]
+    signature = crawler.seat_layout_signature(available_layout)
+    assert signature == crawler.seat_layout_signature(unavailable_layout)
+    captures = [
+        {
+            "format": "IMAX",
+            "date": "Friday — July 17, 2026",
+            "timeslot": "2:00 PM",
+            "path": str(first_path),
+            "layout_signature": signature,
+            "seats": available_layout,
+        },
+        {
+            "format": "IMAX",
+            "date": "Friday — July 17, 2026",
+            "timeslot": "6:00 PM",
+            "path": str(second_path),
+            "layout_signature": signature,
+            "seats": unavailable_layout,
+        },
+    ]
+    answers = iter(["a", "2", "a"])
+    monkeypatch.setattr("builtins.input", lambda _prompt: next(answers))
+
+    summary = crawler.filter_captures_interactively(run_dir, captures)
+
+    assert summary["kept"] == 1
+    assert summary["discarded"] == 1
+    assert (run_dir / "filtered" / "first.png").is_file()
+    assert (run_dir / "discarded" / "second.png").is_file()
+    assert captures[0]["filter_status"] == "filtered"
+    assert captures[1]["filter_status"] == "discarded"

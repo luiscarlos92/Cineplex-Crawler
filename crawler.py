@@ -2,11 +2,14 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import hashlib
 import json
 import os
 import re
+import shutil
 from dataclasses import asdict, dataclass, replace
-from datetime import datetime, timezone
+from datetime import date as calendar_date
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Iterable, Sequence
 
@@ -81,6 +84,37 @@ class PreviewGroup:
     index: int
     format_name: str
     times: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class TimeslotChoice:
+    format_name: str
+    timeslot: str
+    period_labels: tuple[str, ...]
+    capture_indexes: tuple[int, ...]
+
+    @property
+    def display_name(self) -> str:
+        period = self.period_labels[0]
+        if len(self.period_labels) > 1:
+            period = f"{self.period_labels[0]} → {self.period_labels[-1]}"
+        return f"{self.format_name} — {self.timeslot} — {period}"
+
+
+@dataclass(frozen=True)
+class LayoutGroup:
+    signature: str
+    format_name: str
+    rows: tuple[str, ...]
+    date_labels: tuple[str, ...]
+    capture_indexes: tuple[int, ...]
+
+    @property
+    def display_name(self) -> str:
+        dates = self.date_labels[0]
+        if len(self.date_labels) > 1:
+            dates = f"{self.date_labels[0]} → {self.date_labels[-1]}"
+        return f"{self.format_name} — {dates} — rows {', '.join(self.rows)}"
 
 
 def _read_env_file(path: Path) -> dict[str, str]:
@@ -310,6 +344,262 @@ def prompt_multi_choice(
         if valid and indexes:
             return [options[index] for index in indexes]
         print("Please enter one or more displayed numbers.")
+
+
+def prompt_yes_no(question: str, *, default: bool = False) -> bool:
+    suffix = "[Y/n]" if default else "[y/N]"
+    while True:
+        raw = input(f"{question} {suffix}: ").strip().casefold()
+        if not raw:
+            return default
+        if raw in {"y", "yes"}:
+            return True
+        if raw in {"n", "no"}:
+            return False
+        if raw in {"q", "quit", "exit"}:
+            raise KeyboardInterrupt
+        print("Please answer yes or no.")
+
+
+def prompt_positive_int(question: str) -> int:
+    while True:
+        raw = input(f"{question} (or 'q' to quit): ").strip().casefold()
+        if raw in {"q", "quit", "exit"}:
+            raise KeyboardInterrupt
+        if raw.isdigit() and int(raw) > 0:
+            return int(raw)
+        print("Please enter a whole number greater than zero.")
+
+
+EXCLUDED_ORDINARY_SEAT_TYPES = {"dbox", "companion", "wheelchair"}
+
+
+def parse_seat_test_id(test_id: str) -> dict[str, object] | None:
+    match = re.fullmatch(
+        r"(?P<seat_type>.+)-(?P<status>available|occupied)-seat-(?P<row>[A-Z]+)(?P<number>\d+)",
+        test_id,
+        flags=re.I,
+    )
+    if not match:
+        return None
+    return {
+        "seat_type": match.group("seat_type"),
+        "status": match.group("status").casefold(),
+        "row": match.group("row").upper(),
+        "number": int(match.group("number")),
+        "code": f"{match.group('row').upper()}{int(match.group('number'))}",
+    }
+
+
+def is_ordinary_seat(seat: dict[str, object]) -> bool:
+    seat_type = str(seat.get("seat_type", "")).casefold()
+    return bool(seat_type) and seat_type not in EXCLUDED_ORDINARY_SEAT_TYPES
+
+
+def _date_from_capture(capture: dict[str, object]) -> calendar_date | None:
+    iso_value = capture.get("date_iso")
+    if iso_value:
+        try:
+            return calendar_date.fromisoformat(str(iso_value))
+        except ValueError:
+            pass
+    label = str(capture.get("date", ""))
+    match = re.search(
+        r"\b(January|February|March|April|May|June|July|August|September|October|November|December)"
+        r"\s+(\d{1,2}),\s+(\d{4})\b",
+        label,
+        flags=re.I,
+    )
+    if not match:
+        return None
+    try:
+        return datetime.strptime(match.group(0), "%B %d, %Y").date()
+    except ValueError:
+        return None
+
+
+def date_iso_from_label(label: str) -> str | None:
+    parsed = _date_from_capture({"date": label})
+    return parsed.isoformat() if parsed else None
+
+
+def _timeslot_sort_key(value: str) -> tuple[int, str]:
+    try:
+        parsed = datetime.strptime(value.strip().upper(), "%I:%M %p")
+        return parsed.hour * 60 + parsed.minute, value
+    except ValueError:
+        return 24 * 60, value
+
+
+def build_timeslot_choices(captures: Sequence[dict[str, object]]) -> list[TimeslotChoice]:
+    by_format: dict[str, dict[str, dict[str, object]]] = {}
+    for index, capture in enumerate(captures):
+        format_name = str(capture.get("format", "Unknown format"))
+        date_label = str(capture.get("date", "Unknown date"))
+        timeslot = str(capture.get("timeslot", "Unknown time"))
+        date_entry = by_format.setdefault(format_name, {}).setdefault(
+            date_label,
+            {"date": _date_from_capture(capture), "times": {}},
+        )
+        times = date_entry["times"]
+        assert isinstance(times, dict)
+        times.setdefault(timeslot, []).append(index)
+
+    choices: list[TimeslotChoice] = []
+    for format_name in sorted(by_format, key=str.casefold):
+        date_entries = list(by_format[format_name].items())
+        date_entries.sort(key=lambda item: (item[1]["date"] is None, item[1]["date"] or calendar_date.max))
+        periods: list[list[tuple[str, dict[str, object]]]] = []
+        for label, entry in date_entries:
+            signature = tuple(sorted(entry["times"], key=_timeslot_sort_key))
+            if not periods:
+                periods.append([(label, entry)])
+                continue
+            _, previous_entry = periods[-1][-1]
+            previous_signature = tuple(sorted(previous_entry["times"], key=_timeslot_sort_key))
+            previous_date = previous_entry["date"]
+            current_date = entry["date"]
+            consecutive = (
+                previous_date is None
+                or current_date is None
+                or current_date == previous_date + timedelta(days=1)
+            )
+            if signature == previous_signature and consecutive:
+                periods[-1].append((label, entry))
+            else:
+                periods.append([(label, entry)])
+
+        for period in periods:
+            period_labels = tuple(label for label, _ in period)
+            signature = tuple(sorted(period[0][1]["times"], key=_timeslot_sort_key))
+            for timeslot in signature:
+                capture_indexes: list[int] = []
+                for _, entry in period:
+                    times = entry["times"]
+                    assert isinstance(times, dict)
+                    capture_indexes.extend(times.get(timeslot, []))
+                choices.append(
+                    TimeslotChoice(
+                        format_name=format_name,
+                        timeslot=timeslot,
+                        period_labels=period_labels,
+                        capture_indexes=tuple(capture_indexes),
+                    )
+                )
+    return choices
+
+
+def seat_layout_signature(seats: Sequence[dict[str, object]]) -> str:
+    row_min_x: dict[str, float] = {}
+    for seat in seats:
+        row = str(seat.get("row", ""))
+        x = float(seat.get("x", 0))
+        row_min_x[row] = min(x, row_min_x.get(row, x))
+    layout = sorted(
+        (
+            str(seat.get("seat_type", "")),
+            str(seat.get("row", "")),
+            int(seat.get("number", 0)),
+            round(float(seat.get("x", 0)) - row_min_x.get(str(seat.get("row", "")), 0), 1),
+            round(float(seat.get("width", 0)), 1),
+        )
+        for seat in seats
+    )
+    return hashlib.sha1(json.dumps(layout, separators=(",", ":")).encode("utf-8")).hexdigest()[:12]
+
+
+def detected_ordinary_rows(seats: Sequence[dict[str, object]]) -> tuple[str, ...]:
+    row_y: dict[str, float] = {}
+    for seat in seats:
+        if not is_ordinary_seat(seat):
+            continue
+        row = str(seat.get("row", ""))
+        y = float(seat.get("y", 0))
+        if row:
+            row_y[row] = min(y, row_y.get(row, y))
+    return tuple(sorted(row_y, key=lambda row: (row_y[row], row)))
+
+
+def build_layout_groups(
+    captures: Sequence[dict[str, object]], eligible_indexes: set[int]
+) -> list[LayoutGroup]:
+    grouped: dict[tuple[str, str], dict[str, object]] = {}
+    for index in sorted(eligible_indexes):
+        capture = captures[index]
+        seats = capture.get("seats")
+        if not isinstance(seats, list) or not seats:
+            continue
+        signature = str(capture.get("layout_signature") or seat_layout_signature(seats))
+        format_name = str(capture.get("format", "Unknown format"))
+        key = (format_name, signature)
+        entry = grouped.setdefault(
+            key,
+            {
+                "rows": detected_ordinary_rows(seats),
+                "dates": [],
+                "indexes": [],
+            },
+        )
+        date_label = str(capture.get("date", "Unknown date"))
+        dates = entry["dates"]
+        indexes = entry["indexes"]
+        assert isinstance(dates, list) and isinstance(indexes, list)
+        if date_label not in dates:
+            dates.append(date_label)
+        indexes.append(index)
+
+    return [
+        LayoutGroup(
+            signature=signature,
+            format_name=format_name,
+            rows=tuple(entry["rows"]),
+            date_labels=tuple(entry["dates"]),
+            capture_indexes=tuple(entry["indexes"]),
+        )
+        for (format_name, signature), entry in grouped.items()
+    ]
+
+
+def find_adjacent_seat_blocks(
+    seats: Sequence[dict[str, object]], selected_rows: set[str], ticket_count: int
+) -> list[dict[str, object]]:
+    by_row: dict[str, list[dict[str, object]]] = {}
+    for seat in seats:
+        row = str(seat.get("row", ""))
+        if row in selected_rows and is_ordinary_seat(seat):
+            by_row.setdefault(row, []).append(seat)
+
+    qualifying: list[dict[str, object]] = []
+    for row in selected_rows:
+        row_seats = sorted(by_row.get(row, []), key=lambda seat: float(seat.get("x", 0)))
+        run: list[dict[str, object]] = []
+
+        def finish_run() -> None:
+            if len(run) >= ticket_count:
+                qualifying.append(
+                    {
+                        "row": row,
+                        "seats": [str(seat.get("code", "")) for seat in run],
+                        "available_count": len(run),
+                    }
+                )
+
+        for seat in row_seats:
+            if str(seat.get("status", "")).casefold() != "available":
+                finish_run()
+                run = []
+                continue
+            if run:
+                previous = run[-1]
+                number_is_adjacent = abs(int(seat.get("number", 0)) - int(previous.get("number", 0))) == 1
+                rendered_gap = float(seat.get("x", 0)) - float(previous.get("x", 0))
+                width_threshold = max(float(seat.get("width", 0)), float(previous.get("width", 0))) * 1.75
+                if not number_is_adjacent or rendered_gap > width_threshold:
+                    finish_run()
+                    run = []
+            run.append(seat)
+        finish_run()
+    return qualifying
 
 
 async def _dismiss_cookie_dialog(page: Page) -> None:
@@ -562,6 +852,37 @@ async def hide_preview_obstructions(page: Page) -> bool:
     )
 
 
+async def collect_seat_metadata(page: Page) -> list[dict[str, object]]:
+    raw_seats = await page.locator('[data-testid*="-seat-"]').evaluate_all(
+        """elements => elements.map(element => {
+            const rect = element.getBoundingClientRect();
+            return {
+                test_id: element.getAttribute('data-testid') || '',
+                x: Math.round(rect.x * 10) / 10,
+                y: Math.round(rect.y * 10) / 10,
+                width: Math.round(rect.width * 10) / 10,
+                height: Math.round(rect.height * 10) / 10
+            };
+        }).filter(seat => seat.width > 0 && seat.height > 0)"""
+    )
+    seats: list[dict[str, object]] = []
+    for raw in raw_seats:
+        parsed = parse_seat_test_id(str(raw.get("test_id", "")))
+        if not parsed:
+            continue
+        parsed.update(
+            {
+                "x": float(raw["x"]),
+                "y": float(raw["y"]),
+                "width": float(raw["width"]),
+                "height": float(raw["height"]),
+            }
+        )
+        seats.append(parsed)
+    seats.sort(key=lambda seat: (float(seat["y"]), float(seat["x"])))
+    return seats
+
+
 async def capture_preview_group(
     page: Page,
     group: PreviewGroup,
@@ -571,7 +892,7 @@ async def capture_preview_group(
     config: Config,
     max_screenshots: int | None,
     captured_so_far: int,
-) -> list[dict[str, str]]:
+) -> list[dict[str, object]]:
     live_groups = page.get_by_test_id("showtime-details-container")
     if group.index >= await live_groups.count():
         raise RuntimeError(f"Showtime group {group.index + 1} disappeared before it could be opened")
@@ -585,7 +906,7 @@ async def capture_preview_group(
         if re.fullmatch(r"showtime-\d+", test_id):
             timeslot_ids.append(test_id)
 
-    captures: list[dict[str, str]] = []
+    captures: list[dict[str, object]] = []
     for test_id in timeslot_ids:
         if max_screenshots is not None and captured_so_far + len(captures) >= max_screenshots:
             break
@@ -594,6 +915,7 @@ async def capture_preview_group(
         timeslot = extract_time(button_text)
         await button.click()
         await _wait_for_seat_map(page)
+        seats = await collect_seat_metadata(page)
         output_path = unique_path(
             build_output_path(
                 movie.title,
@@ -608,10 +930,14 @@ async def capture_preview_group(
         captures.append(
             {
                 "date": date.label,
+                "date_iso": date_iso_from_label(date.label),
                 "format": group.format_name,
                 "timeslot": timeslot,
                 "showtime_id": test_id.removeprefix("showtime-"),
                 "path": str(output_path),
+                "layout_signature": seat_layout_signature(seats),
+                "rows": list(detected_ordinary_rows(seats)),
+                "seats": seats,
             }
         )
         print(f"    Captured {group.format_name} at {timeslot}: {output_path.name}")
@@ -629,8 +955,8 @@ async def run_preview_loop(
     dates: Sequence[DateOption],
     config: Config,
     max_screenshots: int | None = None,
-) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
-    captures: list[dict[str, str]] = []
+) -> tuple[list[dict[str, object]], list[dict[str, str]]]:
+    captures: list[dict[str, object]] = []
     errors: list[dict[str, str]] = []
     for date in dates:
         if max_screenshots is not None and len(captures) >= max_screenshots:
@@ -665,6 +991,128 @@ async def run_preview_loop(
                 )
                 raise
     return captures, errors
+
+
+def filter_captures_interactively(
+    run_dir: Path, captures: list[dict[str, object]]
+) -> dict[str, object]:
+    timeslot_choices = build_timeslot_choices(captures)
+    if not timeslot_choices:
+        return {"status": "skipped", "reason": "No captured sessions were available"}
+
+    selected_choices = prompt_multi_choice(
+        timeslot_choices,
+        "Select format/timeslot sessions to keep",
+        lambda option: option.display_name,
+    )
+    selected_indexes = {
+        index
+        for choice in selected_choices
+        for index in choice.capture_indexes
+    }
+    ticket_count = prompt_positive_int("How many side-by-side tickets do you need?")
+
+    layout_groups = build_layout_groups(captures, selected_indexes)
+    selected_rows_by_layout: dict[tuple[str, str], set[str]] = {}
+    for group in layout_groups:
+        selected_rows = prompt_multi_choice(
+            group.rows,
+            f"Select acceptable rows for {group.display_name}",
+        )
+        selected_rows_by_layout[(group.format_name, group.signature)] = set(selected_rows)
+
+    decisions: list[dict[str, object]] = []
+    for index, capture in enumerate(captures):
+        format_name = str(capture.get("format", "Unknown format"))
+        signature = str(capture.get("layout_signature", ""))
+        if index not in selected_indexes:
+            keep = False
+            reason = "format/timeslot session not selected"
+            blocks: list[dict[str, object]] = []
+        else:
+            seats = capture.get("seats")
+            selected_rows = selected_rows_by_layout.get((format_name, signature), set())
+            if not isinstance(seats, list) or not seats:
+                keep = False
+                reason = "seat metadata unavailable"
+                blocks = []
+            elif not selected_rows:
+                keep = False
+                reason = "no acceptable rows selected for this layout"
+                blocks = []
+            else:
+                blocks = find_adjacent_seat_blocks(seats, selected_rows, ticket_count)
+                keep = bool(blocks)
+                reason = (
+                    f"at least {ticket_count} adjacent ordinary seats found"
+                    if keep
+                    else f"no block of {ticket_count} adjacent ordinary seats in selected rows"
+                )
+        decisions.append(
+            {
+                "capture_index": index,
+                "keep": keep,
+                "reason": reason,
+                "qualifying_blocks": blocks,
+            }
+        )
+
+    run_root = run_dir.resolve()
+    filtered_dir = run_root / "filtered"
+    discarded_dir = run_root / "discarded"
+    filtered_dir.mkdir(parents=True, exist_ok=True)
+    discarded_dir.mkdir(parents=True, exist_ok=True)
+
+    kept_count = 0
+    discarded_count = 0
+    for decision in decisions:
+        capture = captures[int(decision["capture_index"])]
+        source = Path(str(capture.get("path", ""))).resolve()
+        if not source.is_relative_to(run_root):
+            raise RuntimeError(f"Refusing to move a screenshot outside the run directory: {source}")
+        if not source.is_file():
+            decision["move_status"] = "source missing"
+            continue
+        destination_dir = filtered_dir if decision["keep"] else discarded_dir
+        destination = unique_path(destination_dir / source.name)
+        shutil.move(str(source), str(destination))
+        capture["original_path"] = str(source)
+        capture["path"] = str(destination)
+        capture["filter_status"] = "filtered" if decision["keep"] else "discarded"
+        capture["filter_reason"] = decision["reason"]
+        capture["qualifying_blocks"] = decision["qualifying_blocks"]
+        decision["destination"] = str(destination)
+        decision["move_status"] = "moved"
+        if decision["keep"]:
+            kept_count += 1
+        else:
+            discarded_count += 1
+
+    row_selections = [
+        {
+            "format": group.format_name,
+            "layout_signature": group.signature,
+            "dates": list(group.date_labels),
+            "detected_rows": list(group.rows),
+            "selected_rows": sorted(selected_rows_by_layout.get((group.format_name, group.signature), set())),
+        }
+        for group in layout_groups
+    ]
+    summary = {
+        "status": "complete",
+        "ticket_count": ticket_count,
+        "selected_sessions": [choice.display_name for choice in selected_choices],
+        "row_selections": row_selections,
+        "kept": kept_count,
+        "discarded": discarded_count,
+        "filtered_dir": str(filtered_dir),
+        "discarded_dir": str(discarded_dir),
+        "decisions": decisions,
+    }
+    print(f"\nFiltering complete: {kept_count} kept, {discarded_count} discarded.")
+    print(f"  Kept screenshots: {filtered_dir}")
+    print(f"  Discarded screenshots: {discarded_dir}")
+    return summary
 
 
 def _split_cli_values(values: Sequence[str] | None) -> list[str]:
@@ -706,6 +1154,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--max-distance-km", type=float, help="Override MAX_DISTANCE_KM")
     parser.add_argument("--max-screenshots", type=int, help="Stop after this many screenshots")
     parser.add_argument("--dry-run", action="store_true", help="Discover and select filters without opening seat previews")
+    parser.add_argument(
+        "--filter",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+        help="Enter or skip post-crawl filtering without the initial yes/no prompt",
+    )
     parser.add_argument(
         "--headless",
         action=argparse.BooleanOptionalAction,
@@ -862,6 +1316,15 @@ async def run(args: argparse.Namespace) -> int:
                 report["errors"] = errors
                 report["status"] = "complete" if not errors else "complete-with-errors"
                 print(f"\nCrawl complete: captured {len(captures)} screenshot(s) in {config.output_dir}")
+
+                if captures:
+                    should_filter = args.filter
+                    if should_filter is None:
+                        should_filter = prompt_yes_no("Continue with screenshot filtering?")
+                    if should_filter:
+                        report["filtering"] = filter_captures_interactively(config.output_dir, captures)
+                    else:
+                        report["filtering"] = {"status": "skipped", "reason": "User stopped after crawl"}
 
             report["finished_at"] = datetime.now(timezone.utc).isoformat()
             await browser.close()
