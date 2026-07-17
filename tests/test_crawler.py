@@ -425,6 +425,69 @@ class _FakeLoaderPage:
         await asyncio.sleep(milliseconds / 1000)
 
 
+class _FakeSoldOutLocator:
+    def __init__(self, visibility):
+        self.visibility = iter(visibility)
+        self.last = False
+
+    async def is_visible(self):
+        self.last = next(self.visibility, self.last)
+        return self.last
+
+
+class _FakeSoldOutMessage:
+    def __init__(self):
+        self.visible = True
+
+    @property
+    def first(self):
+        return self
+
+    async def is_visible(self):
+        return self.visible
+
+    async def wait_for(self, *, state, timeout):
+        assert state == "hidden"
+        assert timeout == 10_000
+        assert self.visible is False
+
+
+class _FakeSoldOutButton:
+    def __init__(self, message):
+        self.message = message
+        self.clicks = 0
+
+    @property
+    def first(self):
+        return self
+
+    async def is_visible(self):
+        return True
+
+    async def click(self):
+        self.clicks += 1
+        self.message.visible = False
+
+
+class _FakeSoldOutPage(_FakeLoaderPage):
+    def __init__(self):
+        super().__init__([True])
+        self.message = _FakeSoldOutMessage()
+        self.button = _FakeSoldOutButton(self.message)
+        self.movie_title = _FakeCaptureButton()
+
+    def get_by_test_id(self, test_id):
+        assert test_id == "movie-title"
+        return self.movie_title
+
+    def get_by_text(self, _pattern):
+        return self.message
+
+    def get_by_role(self, role, **_kwargs):
+        assert role == "button"
+        return self.button
+
+
 def test_preview_loader_must_remain_hidden_before_capture():
     page = _FakeLoaderPage([True, True, False, False, False])
 
@@ -440,6 +503,32 @@ def test_preview_loader_must_remain_hidden_before_capture():
     assert page.loader.calls >= 4
 
 
+def test_preview_loader_stops_waiting_when_sold_out_appears():
+    page = _FakeLoaderPage([True])
+    sold_out = _FakeSoldOutLocator([False, True])
+
+    ready = asyncio.run(
+        crawler.wait_for_preview_loader(
+            page,
+            sold_out_locator=sold_out,
+            stable_hidden_ms=2,
+            timeout_ms=100,
+            poll_interval_ms=1,
+        )
+    )
+
+    assert ready is False
+
+
+def test_seat_map_wait_dismisses_sold_out_modal_immediately():
+    page = _FakeSoldOutPage()
+
+    ready = asyncio.run(crawler._wait_for_seat_map(page))
+
+    assert ready is False
+    assert page.button.clicks == 1
+
+
 def test_preview_loader_timeout_fails_instead_of_capturing():
     page = _FakeLoaderPage([True])
 
@@ -452,3 +541,133 @@ def test_preview_loader_timeout_fails_instead_of_capturing():
                 poll_interval_ms=1,
             )
         )
+
+
+class _FakeCaptureButton:
+    def __init__(self, *, text="", test_id=""):
+        self.text = text
+        self.test_id = test_id
+        self.clicks = 0
+
+    async def click(self):
+        self.clicks += 1
+
+    async def inner_text(self):
+        return self.text
+
+    async def get_attribute(self, name):
+        assert name == "data-testid"
+        return self.test_id
+
+    async def wait_for(self, **_kwargs):
+        return None
+
+
+class _FakeCaptureCollection:
+    def __init__(self, items):
+        self.items = items
+
+    async def count(self):
+        return len(self.items)
+
+    def nth(self, index):
+        return self.items[index]
+
+
+class _FakeCaptureGroup:
+    def __init__(self):
+        self.preview = _FakeCaptureButton()
+
+    def get_by_test_id(self, test_id):
+        assert test_id == "seat-preview"
+        return self.preview
+
+
+class _FakeCapturePage:
+    def __init__(self):
+        self.group = _FakeCaptureGroup()
+        self.time_buttons = [
+            _FakeCaptureButton(text="11:00 AM", test_id="showtime-1"),
+            _FakeCaptureButton(text="3:00 PM", test_id="showtime-2"),
+            _FakeCaptureButton(text="7:00 PM", test_id="showtime-3"),
+        ]
+        self.exit_button = _FakeCaptureButton()
+        self.select_date = _FakeCaptureButton()
+        self.screenshots = []
+
+    def get_by_test_id(self, test_id):
+        if test_id == "showtime-details-container":
+            return _FakeCaptureCollection([self.group])
+        if test_id == "exit-button":
+            return self.exit_button
+        if test_id == "select-date":
+            return self.select_date
+        for button in self.time_buttons:
+            if button.test_id == test_id:
+                return button
+        raise AssertionError(f"Unexpected test ID: {test_id}")
+
+    def locator(self, selector):
+        assert selector == '[data-testid^="showtime-"]'
+        return _FakeCaptureCollection(self.time_buttons)
+
+    async def screenshot(self, *, path, full_page):
+        assert full_page is True
+        screenshot = Path(path)
+        screenshot.write_bytes(b"screenshot")
+        self.screenshots.append(screenshot)
+
+    async def wait_for_timeout(self, _milliseconds):
+        return None
+
+
+def test_capture_group_skips_sold_out_timeslot_and_continues(monkeypatch, tmp_path):
+    page = _FakeCapturePage()
+    readiness = iter([False, True, False, True])
+
+    async def fake_wait_for_seat_map(_page):
+        return next(readiness)
+
+    async def fake_collect_seat_metadata(_page):
+        return []
+
+    monkeypatch.setattr(crawler, "_wait_for_seat_map", fake_wait_for_seat_map)
+    monkeypatch.setattr(crawler, "collect_seat_metadata", fake_collect_seat_metadata)
+    config = crawler.Config(
+        output_dir=tmp_path,
+        documentation_dir=tmp_path,
+        max_distance_km=50,
+        headless=True,
+        browser_channel=None,
+        locale="en-CA",
+        timezone_id="America/Toronto",
+        latitude=None,
+        longitude=None,
+        geolocation_accuracy_meters=100,
+    )
+
+    captures, skipped = asyncio.run(
+        crawler.capture_preview_group(
+            page,
+            crawler.PreviewGroup(index=0, format_name="IMAX", times=()),
+            crawler.MovieOption(title="The Odyssey", button_name="The Odyssey"),
+            crawler.TheatreOption("7408", "Cineplex Vaughan", "Vaughan", 14),
+            crawler.DateOption("date-0", "Today - July 17, 2026"),
+            config,
+            max_screenshots=None,
+            captured_so_far=0,
+        )
+    )
+
+    assert [capture["timeslot"] for capture in captures] == ["11:00 AM", "7:00 PM"]
+    assert skipped == [
+        {
+            "date": "Today - July 17, 2026",
+            "format": "IMAX",
+            "timeslot": "3:00 PM",
+            "showtime_id": "2",
+            "reason": "sold-out",
+        }
+    ]
+    assert len(page.screenshots) == 2
+    assert page.exit_button.clicks == 1

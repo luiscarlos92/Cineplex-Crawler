@@ -38,6 +38,7 @@
 - A bounded live run captured and visually verified two different timeslots from the same `UltraAVX + D-BOX` preview group.
 - Seat-preview captures hide Cineplex's fixed bottom action sheet after every preview load and timeslot rerender so it cannot cover seats or the legend.
 - Seat-map readiness waits for Cineplex's popcorn loader and dimming overlay to remain absent, preventing stale or darkened screenshots during timeslot changes.
+- Sold-out preview modals are detected during seat-map readiness, dismissed through `Change showtime`, reported as skipped sessions, and no longer block later timeslots.
 - Each capture stores semantic seat-map metadata for accurate row, type, occupancy, and adjacency analysis.
 - The post-crawl filter condenses timeslot schedules by format/date period, prompts for ticket count and rows per detected layout, then moves screenshots into `filtered/` or `discarded/`.
 - Side-by-side detection excludes D-BOX and accessibility positions and checks both consecutive numbering and rendered spacing to avoid crossing aisles.

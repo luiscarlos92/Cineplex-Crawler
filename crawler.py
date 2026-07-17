@@ -989,27 +989,60 @@ async def collect_preview_groups(page: Page) -> list[PreviewGroup]:
     return options
 
 
-async def _wait_for_seat_map(page: Page) -> None:
+SOLD_OUT_MESSAGE = re.compile(r"showtime is sold out", re.I)
+
+
+async def dismiss_sold_out_modal(page: Page, message: Locator | None = None) -> bool:
+    """Dismiss Cineplex's sold-out overlay so other preview times remain usable."""
+    if message is None:
+        message = page.get_by_text(SOLD_OUT_MESSAGE).first
+    if not await message.is_visible():
+        return False
+    button = page.get_by_role("button", name=re.compile(r"^Change showtime$", re.I)).first
+    if not await button.is_visible():
+        raise RuntimeError("Cineplex reported a sold-out showtime without a Change showtime button")
+    await button.click()
+    try:
+        await message.wait_for(state="hidden", timeout=10_000)
+    except PlaywrightTimeoutError as exc:
+        raise RuntimeError("The sold-out showtime dialog did not close") from exc
+    return True
+
+
+async def _wait_for_seat_map(page: Page) -> bool:
+    """Wait for a usable seat map, returning False when the showtime is sold out."""
     await page.get_by_test_id("movie-title").wait_for(state="visible", timeout=30_000)
-    await wait_for_preview_loader(page)
+    sold_out_message = page.get_by_text(SOLD_OUT_MESSAGE).first
+    loader_ready = await wait_for_preview_loader(page, sold_out_locator=sold_out_message)
+    if not loader_ready or await sold_out_message.is_visible():
+        await dismiss_sold_out_modal(page, sold_out_message)
+        return False
     seat = page.locator('[data-testid*="-seat-"]').first
     try:
         await seat.wait_for(state="attached", timeout=20_000)
     except PlaywrightTimeoutError:
-        # Some sold-out or accessibility-only auditoriums can legitimately have
-        # no standard seat marker. The page title still proves the preview loaded.
+        if await sold_out_message.is_visible():
+            await dismiss_sold_out_modal(page, sold_out_message)
+            return False
+        # Accessibility-only auditoriums can legitimately have no standard seat
+        # marker. The page title still proves the preview loaded.
         pass
     await page.wait_for_timeout(150)
+    if await sold_out_message.is_visible():
+        await dismiss_sold_out_modal(page, sold_out_message)
+        return False
     await hide_preview_obstructions(page)
+    return True
 
 
 async def wait_for_preview_loader(
     page: Page,
     *,
+    sold_out_locator: Locator | None = None,
     stable_hidden_ms: int = 750,
     timeout_ms: int = 30_000,
     poll_interval_ms: int = 100,
-) -> None:
+) -> bool:
     """Wait until Cineplex's popcorn loading overlay stays gone.
 
     The previous seat SVG remains mounted while a new timeslot loads, so seat
@@ -1020,6 +1053,8 @@ async def wait_for_preview_loader(
     deadline = loop.time() + timeout_ms / 1000
     hidden_since: float | None = None
     while loop.time() < deadline:
+        if sold_out_locator is not None and await sold_out_locator.is_visible():
+            return False
         is_visible = await loader.evaluate_all(
             """elements => elements.some(element => {
                 const rect = element.getBoundingClientRect();
@@ -1035,7 +1070,7 @@ async def wait_for_preview_loader(
         elif hidden_since is None:
             hidden_since = now
         elif (now - hidden_since) * 1000 >= stable_hidden_ms:
-            return
+            return True
         await page.wait_for_timeout(poll_interval_ms)
     raise RuntimeError("Cineplex's popcorn seat-map loader did not disappear before the capture timeout")
 
@@ -1098,7 +1133,7 @@ async def capture_preview_group(
     config: Config,
     max_screenshots: int | None,
     captured_so_far: int,
-) -> list[dict[str, object]]:
+) -> tuple[list[dict[str, object]], list[dict[str, str]]]:
     live_groups = page.get_by_test_id("showtime-details-container")
     if group.index >= await live_groups.count():
         raise RuntimeError(f"Showtime group {group.index + 1} disappeared before it could be opened")
@@ -1113,6 +1148,7 @@ async def capture_preview_group(
             timeslot_ids.append(test_id)
 
     captures: list[dict[str, object]] = []
+    skipped: list[dict[str, str]] = []
     for test_id in timeslot_ids:
         if max_screenshots is not None and captured_so_far + len(captures) >= max_screenshots:
             break
@@ -1120,7 +1156,18 @@ async def capture_preview_group(
         button_text = re.sub(r"\s+", " ", (await button.inner_text()).strip())
         timeslot = extract_time(button_text)
         await button.click()
-        await _wait_for_seat_map(page)
+        if not await _wait_for_seat_map(page):
+            skipped.append(
+                {
+                    "date": date.label,
+                    "format": group.format_name,
+                    "timeslot": timeslot,
+                    "showtime_id": test_id.removeprefix("showtime-"),
+                    "reason": "sold-out",
+                }
+            )
+            print(f"    Skipped sold-out {group.format_name} at {timeslot}.")
+            continue
         seats = await collect_seat_metadata(page)
         output_path = unique_path(
             build_output_path(
@@ -1151,7 +1198,7 @@ async def capture_preview_group(
     await page.get_by_test_id("exit-button").click()
     await page.get_by_test_id("select-date").wait_for(state="visible", timeout=30_000)
     await page.wait_for_timeout(500)
-    return captures
+    return captures, skipped
 
 
 async def run_preview_loop(
@@ -1161,9 +1208,10 @@ async def run_preview_loop(
     dates: Sequence[DateOption],
     config: Config,
     max_screenshots: int | None = None,
-) -> tuple[list[dict[str, object]], list[dict[str, str]]]:
+) -> tuple[list[dict[str, object]], list[dict[str, str]], list[dict[str, str]]]:
     captures: list[dict[str, object]] = []
     errors: list[dict[str, str]] = []
+    skipped: list[dict[str, str]] = []
     for date in dates:
         if max_screenshots is not None and len(captures) >= max_screenshots:
             break
@@ -1175,18 +1223,18 @@ async def run_preview_loop(
             if max_screenshots is not None and len(captures) >= max_screenshots:
                 break
             try:
-                captures.extend(
-                    await capture_preview_group(
-                        page,
-                        group,
-                        movie,
-                        theatre,
-                        date,
-                        config,
-                        max_screenshots,
-                        len(captures),
-                    )
+                group_captures, group_skipped = await capture_preview_group(
+                    page,
+                    group,
+                    movie,
+                    theatre,
+                    date,
+                    config,
+                    max_screenshots,
+                    len(captures),
                 )
+                captures.extend(group_captures)
+                skipped.extend(group_skipped)
             except Exception as exc:
                 errors.append(
                     {
@@ -1196,7 +1244,7 @@ async def run_preview_loop(
                     }
                 )
                 raise
-    return captures, errors
+    return captures, errors, skipped
 
 
 async def filter_captures_interactively(
@@ -1397,6 +1445,7 @@ async def run(args: argparse.Namespace) -> int:
         "output_dir": None,
         "config": _serialize_config(config),
         "captures": [],
+        "skipped_sessions": [],
         "errors": [],
     }
     browser = None
@@ -1530,7 +1579,7 @@ async def run(args: argparse.Namespace) -> int:
                 )
             else:
                 # Date discovery leaves its drawer open; the loop selects the first date from it.
-                captures, errors = await run_preview_loop(
+                captures, errors, skipped_sessions = await run_preview_loop(
                     page,
                     movie,
                     theatre,
@@ -1539,9 +1588,13 @@ async def run(args: argparse.Namespace) -> int:
                     args.max_screenshots,
                 )
                 report["captures"] = captures
+                report["skipped_sessions"] = skipped_sessions
                 report["errors"] = errors
                 report["status"] = "complete" if not errors else "complete-with-errors"
-                print(f"\nCrawl complete: captured {len(captures)} screenshot(s) in {config.output_dir}")
+                print(
+                    f"\nCrawl complete: captured {len(captures)} screenshot(s), "
+                    f"skipped {len(skipped_sessions)} sold-out session(s) in {config.output_dir}"
+                )
 
                 if captures:
                     should_filter = args.filter

@@ -41,6 +41,7 @@ This document preserves the documentation-only workflow for the Cineplex browser
      - Iterate through each Preview Seats group.
      - For each Preview Seats group, iterate through the available timeslots.
      - Click the timeslot.
+     - If Cineplex displays the sold-out modal, click `Change showtime`, record the session as skipped, and continue to the next timeslot.
      - Capture a screenshot named using the pattern: Movie Name-Cinema Name-Format Name-Date-Timeslot
      - Continue until all timeslots are processed.
      - Return to the previous view and continue to the next Preview Seats group.
@@ -128,6 +129,7 @@ Validation performed on July 16, 2026 (America/Toronto):
 - Only the obstructing action sheet is hidden; the movie details, timeslot controls, seat map, legend, and availability state remain unchanged.
 - Cineplex also displays a popcorn loading animation inside a full-page dimming overlay while a seat map changes.
 - The crawler requires the popcorn loader to remain absent continuously before reading seats or capturing the page. A stuck loader fails the capture instead of producing a darkened screenshot.
+- A sold-out modal takes precedence over the loader wait. The crawler dismisses it through `Change showtime`, skips the affected timeslot without a screenshot, and continues the preview loop.
 
 ## Seat availability filtering
 

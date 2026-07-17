@@ -74,6 +74,11 @@ overlay to remain absent before collecting seat data or taking a screenshot.
 If the loader does not clear before the timeout, that capture fails instead of
 saving an obstructed or stale image.
 
+If Cineplex reports that a showtime is sold out, the crawler dismisses the
+modal with `Change showtime`, records that session under `skipped_sessions` in
+the run report, and continues with the remaining timeslots. Sold-out sessions
+do not create screenshots and do not stop the crawl.
+
 ## Post-crawl filtering
 
 After a successful crawl, the crawler asks whether to continue with screenshot
