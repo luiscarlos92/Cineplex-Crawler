@@ -30,7 +30,8 @@
 - Configuration is validated and resolved relative to the repository; environment variables override `.env`, and geolocation requires a complete latitude/longitude pair.
 - Movie, theatre, experience, and date discovery now use scoped live Tickets controls and structured Cineplex test IDs.
 - Theatre options include live IDs, cities, and distances, are filtered by the configured maximum distance, and support interactive or CLI multi-selection.
-- Selected theatres run sequentially with independent experience/date discovery, output folders, screenshot filtering, and report entries; Tickets is reset and the movie restored between theatres to prevent filter leakage.
+- The prompt order is movie, global dates, theatres, and global formats. Selected theatres then run sequentially without crawl-time prompts; Tickets is reset and the movie restored between theatres to prevent filter leakage.
+- Global date and format choices are mapped to each theatre's rediscovered live options. Unavailable choices are reported and a theatre with no matching choices is skipped rather than crawled with broader filters.
 - Key-driven terminal selections and optional command-line selections are implemented, including explicit `any` experiences and `all` dates. Interactive menus consistently use Up/Down, Space for multi-select, `A` to toggle all, and Enter to submit.
 - Empty checkbox submissions open an explicit `Select all` / `Go back` confirmation for experiences, dates, sessions, and rows; `Go back` is the safe default.
 - Questionary prompts use its asynchronous API on Playwright's existing event loop; a real keypress regression test protects against nested `asyncio.run()` failures.
@@ -43,9 +44,9 @@
 - A bounded multi-theatre live run captured one preview each at Vaughan and Yonge-Eglinton after a clean Tickets/movie reset between theatres.
 - Seat-preview captures hide Cineplex's fixed bottom action sheet after every preview load and timeslot rerender so it cannot cover seats or the legend.
 - Seat-map readiness waits for Cineplex's popcorn loader and dimming overlay to remain absent, preventing stale or darkened screenshots during timeslot changes.
-- Sold-out preview modals are detected during seat-map readiness, dismissed through `Change showtime`, reported as skipped sessions, and no longer block later timeslots.
+- Disabled sold-out timeslot buttons are skipped before Playwright attempts a click. Sold-out preview modals are also detected during seat-map readiness, dismissed through `Change showtime`, and reported without blocking later timeslots.
 - Each capture stores semantic seat-map metadata for accurate row, type, occupancy, and adjacency analysis.
-- The post-crawl filter condenses timeslot schedules by format/date period, prompts for ticket count and rows per detected layout, then moves screenshots into `filtered/` or `discarded/`.
+- After all crawls, the post-crawl flow asks once whether to filter and once for the shared ticket count. For each theatre it asks for rows per detected layout, then condensed timeslots, and moves screenshots into `filtered/` or `discarded/`.
 - Side-by-side detection excludes D-BOX and accessibility positions and checks both consecutive numbering and rendered spacing to avoid crossing aisles.
 - The deterministic regression suite covers configuration, normalization, parsing, naming, collision handling, and selection matching; a live smoke test is opt-in.
 

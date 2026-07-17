@@ -365,31 +365,32 @@ def test_multiple_theatres_get_independent_outputs_filters_and_report_entries(mo
     async def fake_select_theatre(_page, theatre):
         selected_theatres.append(theatre.name)
 
-    async def fake_choose_experiences(_page, theatre, _cli_values, *, dry_run):
-        assert dry_run is False
-        return [crawler.ExperienceOption(f"IMAX at {theatre.name}", "aria")]
+    async def fake_collect_experiences(_page):
+        return [crawler.ExperienceOption("IMAX", "aria")]
 
     async def fake_select_experiences(_page, _experiences):
         return None
 
-    async def fake_choose_dates(_page, theatre, _cli_values, *, all_dates, dry_run):
-        assert all_dates is False
-        assert dry_run is False
-        return [crawler.DateOption("date-0", f"Today at {theatre.name}")]
+    async def fake_collect_dates(_page):
+        return [crawler.DateOption("date-0", "Today - July 17, 2026")]
 
     async def fake_preview_loop(_page, _movie, theatre, _dates, config, _maximum):
         return ([{"theatre": theatre.name, "output_dir": str(config.output_dir)}], [], [])
 
-    async def fake_filter(run_dir, captures):
-        filter_calls.append((run_dir, captures[0]["theatre"]))
+    async def fake_filter(run_dir, captures, *, ticket_count=None):
+        filter_calls.append((run_dir, captures[0]["theatre"], ticket_count))
         return {"status": "complete"}
 
+    async def fake_ticket_count(_question):
+        return 3
+
     monkeypatch.setattr(crawler, "select_theatre", fake_select_theatre)
-    monkeypatch.setattr(crawler, "choose_experiences_for_theatre", fake_choose_experiences)
+    monkeypatch.setattr(crawler, "collect_experience_options", fake_collect_experiences)
     monkeypatch.setattr(crawler, "select_experiences", fake_select_experiences)
-    monkeypatch.setattr(crawler, "choose_dates_for_theatre", fake_choose_dates)
+    monkeypatch.setattr(crawler, "collect_date_options", fake_collect_dates)
     monkeypatch.setattr(crawler, "run_preview_loop", fake_preview_loop)
     monkeypatch.setattr(crawler, "filter_captures_interactively", fake_filter)
+    monkeypatch.setattr(crawler, "prompt_positive_int", fake_ticket_count)
 
     config = crawler.Config(
         output_dir=tmp_path / "output",
@@ -416,20 +417,24 @@ def test_multiple_theatres_get_independent_outputs_filters_and_report_entries(mo
                 config,
                 started_at,
                 args,
-                [],
-                [],
+                [crawler.ExperienceOption("IMAX", "global aria")],
+                [crawler.DateOption("date-0", "Today - July 17, 2026")],
             )
             for theatre in theatres
         ]
 
     theatre_runs = asyncio.run(process_both())
+    asyncio.run(crawler.filter_theatre_runs_interactively(theatre_runs, True))
     report = {"captures": [], "skipped_sessions": [], "errors": []}
     crawler.finalize_theatre_runs(report, theatre_runs)
 
     assert selected_theatres == ["Cineplex Vaughan", "Cineplex Varsity"]
     assert len({run["output_dir"] for run in theatre_runs}) == 2
     assert all(run["status"] == "complete" for run in theatre_runs)
-    assert [name for _directory, name in filter_calls] == selected_theatres
+    assert [(name, count) for _directory, name, count in filter_calls] == [
+        ("Cineplex Vaughan", 3),
+        ("Cineplex Varsity", 3),
+    ]
     assert report["status"] == "complete"
     assert report["output_dir"] is None
     assert len(report["output_dirs"]) == 2
@@ -539,6 +544,32 @@ def test_theatre_report_preserves_failure_without_losing_successful_captures():
     assert report["errors"] == [
         {"theatre": "Cineplex Varsity", "error": "selector changed"}
     ]
+
+
+def test_global_date_and_format_choices_map_to_each_theatre_options():
+    requested_dates = [
+        crawler.DateOption("date-20", "Monday - July 20, 2026"),
+        crawler.DateOption("date-21", "Tuesday - July 21, 2026"),
+    ]
+    local_dates = [
+        crawler.DateOption("date-3", "Mon - July 20, 2026"),
+    ]
+    requested_formats = [
+        crawler.ExperienceOption("IMAX", "global-imax"),
+        crawler.ExperienceOption("UltraAVX", "global-ultraavx"),
+    ]
+    local_formats = [crawler.ExperienceOption("IMAX", "local-imax")]
+
+    dates, missing_dates = crawler.map_date_options(requested_dates, local_dates)
+    formats, missing_formats = crawler.map_experience_options(
+        requested_formats,
+        local_formats,
+    )
+
+    assert dates == local_dates
+    assert missing_dates == ["Tuesday - July 21, 2026"]
+    assert formats == local_formats
+    assert missing_formats == ["UltraAVX"]
 
 
 class _FakeFilterControl:
@@ -901,7 +932,7 @@ def test_interactive_filter_moves_matches_and_leftovers(monkeypatch, tmp_path):
             "seats": unavailable_layout,
         },
     ]
-    answers = iter(["a", "2", "all"])
+    answers = iter(["2", "all", "a"])
     monkeypatch.setattr(crawler, "_console_menu_available", lambda: False)
     monkeypatch.setattr("builtins.input", lambda _prompt: next(answers))
 
@@ -1058,9 +1089,10 @@ def test_preview_loader_timeout_fails_instead_of_capturing():
 
 
 class _FakeCaptureButton:
-    def __init__(self, *, text="", test_id=""):
+    def __init__(self, *, text="", test_id="", enabled=True):
         self.text = text
         self.test_id = test_id
+        self.enabled = enabled
         self.clicks = 0
 
     async def click(self):
@@ -1068,6 +1100,9 @@ class _FakeCaptureButton:
 
     async def inner_text(self):
         return self.text
+
+    async def is_enabled(self):
+        return self.enabled
 
     async def get_attribute(self, name):
         assert name == "data-testid"
@@ -1185,3 +1220,60 @@ def test_capture_group_skips_sold_out_timeslot_and_continues(monkeypatch, tmp_pa
     ]
     assert len(page.screenshots) == 2
     assert page.exit_button.clicks == 1
+
+
+def test_capture_group_skips_disabled_sold_out_button_without_clicking(monkeypatch, tmp_path):
+    page = _FakeCapturePage()
+    disabled = _FakeCaptureButton(
+        text="11:00 PM Sold Out",
+        test_id="showtime-4",
+        enabled=False,
+    )
+    page.time_buttons.append(disabled)
+    readiness = iter([True, True, True, True])
+
+    async def fake_wait_for_seat_map(_page):
+        return next(readiness)
+
+    async def fake_collect_seat_metadata(_page):
+        return []
+
+    monkeypatch.setattr(crawler, "_wait_for_seat_map", fake_wait_for_seat_map)
+    monkeypatch.setattr(crawler, "collect_seat_metadata", fake_collect_seat_metadata)
+    config = crawler.Config(
+        output_dir=tmp_path,
+        documentation_dir=tmp_path,
+        max_distance_km=50,
+        headless=True,
+        browser_channel=None,
+        locale="en-CA",
+        timezone_id="America/Toronto",
+        latitude=None,
+        longitude=None,
+        geolocation_accuracy_meters=100,
+    )
+
+    captures, skipped = asyncio.run(
+        crawler.capture_preview_group(
+            page,
+            crawler.PreviewGroup(index=0, format_name="IMAX 70MM", times=()),
+            crawler.MovieOption(title="The Odyssey", button_name="The Odyssey"),
+            crawler.TheatreOption("7408", "Cineplex Vaughan", "Vaughan", 14),
+            crawler.DateOption("date-0", "Today - July 17, 2026"),
+            config,
+            max_screenshots=None,
+            captured_so_far=0,
+        )
+    )
+
+    assert len(captures) == 3
+    assert skipped == [
+        {
+            "date": "Today - July 17, 2026",
+            "format": "IMAX 70MM",
+            "timeslot": "11:00 PM",
+            "showtime_id": "4",
+            "reason": "sold-out",
+        }
+    ]
+    assert disabled.clicks == 0

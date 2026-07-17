@@ -20,9 +20,11 @@ Key responsibilities:
 - convert showtimes into sortable zero-padded 24-hour `HH_MM` filename segments
 - discover available filters from the live site when possible
 - support later steps such as theater selection, experiences, dates, and preview-seat loops
-- orchestrate multiple theatres sequentially with independent filters, outputs, post-crawl filtering, and failure reporting
+- prompt once for movie, global dates, theatres, and global formats, then orchestrate the selected theatres without crawl-time prompts
+- map global date/format choices to each theatre's live availability and report unavailable choices without broadening the crawl
+- run one shared post-crawl filter decision and ticket count, followed by independent row and timeslot prompts per theatre
 - capture semantic seat-map metadata and filter screenshots by session, row, and adjacent-seat availability
-- detect and dismiss sold-out preview modals, report the skipped session, and continue later timeslots
+- skip disabled sold-out buttons before clicking, detect and dismiss sold-out preview modals, report the skipped session, and continue later timeslots
 - provide reusable arrow-key single- and multi-select console prompts across the crawl and filtering stages
 - guard empty multi-select submissions with an explicit select-all or go-back confirmation
 - await console prompts on the crawler's existing asyncio loop so Questionary and Playwright can run together without nested event loops
@@ -46,7 +48,7 @@ The regression tests in [tests/test_crawler.py](tests/test_crawler.py) validate 
 - schedule-period grouping and layout signatures
 - aisle-safe adjacent-seat detection
 - filtered/discarded file organization
-- multi-theatre selection, per-theatre isolation, and aggregate report behavior
+- global date/format mapping, multi-theatre isolation, shared filtering setup, and aggregate report behavior
 
 ## Configuration model
 The crawler reads settings from the environment and from a local .env file. The most important values are:

@@ -1249,6 +1249,19 @@ async def capture_preview_group(
         button = page.get_by_test_id(test_id)
         button_text = re.sub(r"\s+", " ", (await button.inner_text()).strip())
         timeslot = extract_time(button_text)
+        if not await button.is_enabled():
+            reason = "sold-out" if re.search(r"sold\s*out", button_text, re.I) else "disabled"
+            skipped.append(
+                {
+                    "date": date.label,
+                    "format": group.format_name,
+                    "timeslot": timeslot,
+                    "showtime_id": test_id.removeprefix("showtime-"),
+                    "reason": reason,
+                }
+            )
+            print(f"    Skipped {reason.replace('-', ' ')} {group.format_name} at {timeslot}.")
+            continue
         await button.click()
         if not await _wait_for_seat_map(page):
             skipped.append(
@@ -1344,11 +1357,26 @@ async def run_preview_loop(
 
 
 async def filter_captures_interactively(
-    run_dir: Path, captures: list[dict[str, object]]
+    run_dir: Path,
+    captures: list[dict[str, object]],
+    *,
+    ticket_count: int | None = None,
 ) -> dict[str, object]:
     timeslot_choices = build_timeslot_choices(captures)
     if not timeslot_choices:
         return {"status": "skipped", "reason": "No captured sessions were available"}
+
+    if ticket_count is None:
+        ticket_count = await prompt_positive_int("How many side-by-side tickets do you need?")
+
+    layout_groups = build_layout_groups(captures, set(range(len(captures))))
+    selected_rows_by_layout: dict[tuple[str, str], set[str]] = {}
+    for group in layout_groups:
+        selected_rows = await prompt_row_selection(
+            group.rows,
+            f"Select acceptable rows for {group.display_name}",
+        )
+        selected_rows_by_layout[(group.format_name, group.signature)] = set(selected_rows)
 
     selected_choices = await prompt_multi_choice(
         timeslot_choices,
@@ -1360,16 +1388,6 @@ async def filter_captures_interactively(
         for choice in selected_choices
         for index in choice.capture_indexes
     }
-    ticket_count = await prompt_positive_int("How many side-by-side tickets do you need?")
-
-    layout_groups = build_layout_groups(captures, selected_indexes)
-    selected_rows_by_layout: dict[tuple[str, str], set[str]] = {}
-    for group in layout_groups:
-        selected_rows = await prompt_row_selection(
-            group.rows,
-            f"Select acceptable rows for {group.display_name}",
-        )
-        selected_rows_by_layout[(group.format_name, group.signature)] = set(selected_rows)
 
     decisions: list[dict[str, object]] = []
     for index, capture in enumerate(captures):
@@ -1559,14 +1577,12 @@ async def choose_theatres(
     return [option for option in selected if isinstance(option, TheatreOption)]
 
 
-async def choose_experiences_for_theatre(
-    page: Page,
-    theatre: TheatreOption,
+async def choose_experiences(
+    experiences: Sequence[ExperienceOption],
     cli_values: Sequence[str],
     *,
     dry_run: bool,
 ) -> list[ExperienceOption]:
-    experiences = await collect_experience_options(page)
     if cli_values:
         if len(cli_values) == 1 and cli_values[0].casefold() in {"any", "none"}:
             return []
@@ -1580,36 +1596,69 @@ async def choose_experiences_for_theatre(
         return []
     selected = await prompt_multi_choice(
         experiences,
-        f"Select experiences for {theatre.name}",
+        "Select formats",
         lambda option: option.label,
     )
     return [option for option in selected if isinstance(option, ExperienceOption)]
 
 
-async def choose_dates_for_theatre(
-    page: Page,
-    theatre: TheatreOption,
+async def choose_dates(
+    dates: Sequence[DateOption],
     cli_values: Sequence[str],
     *,
     all_dates: bool,
     dry_run: bool,
 ) -> list[DateOption]:
-    dates = await collect_date_options(page)
     if all_dates or any(value.casefold() == "all" for value in cli_values):
-        return dates
+        return list(dates)
     if cli_values:
         return [
             _match_named_choice(value, dates, lambda option: option.label)
             for value in cli_values
         ]
     if dry_run:
-        return dates[:1]
+        return list(dates[:1])
     selected = await prompt_multi_choice(
         dates,
-        f"Select dates for {theatre.name}",
+        "Select dates",
         lambda option: option.label,
     )
     return [option for option in selected if isinstance(option, DateOption)]
+
+
+def map_experience_options(
+    requested: Sequence[ExperienceOption],
+    available: Sequence[ExperienceOption],
+) -> tuple[list[ExperienceOption], list[str]]:
+    available_by_label = {option.label.casefold(): option for option in available}
+    matched: list[ExperienceOption] = []
+    unavailable: list[str] = []
+    for option in requested:
+        local = available_by_label.get(option.label.casefold())
+        if local is None:
+            unavailable.append(option.label)
+        elif local not in matched:
+            matched.append(local)
+    return matched, unavailable
+
+
+def map_date_options(
+    requested: Sequence[DateOption],
+    available: Sequence[DateOption],
+) -> tuple[list[DateOption], list[str]]:
+    def date_key(option: DateOption) -> str:
+        return date_iso_from_label(option.label) or option.label.casefold()
+
+    available_by_date = {date_key(option): option for option in available}
+    matched: list[DateOption] = []
+    unavailable: list[str] = []
+    for option in requested:
+        local = available_by_date.get(date_key(option))
+        if local is None:
+            unavailable.append(option.label)
+        elif local not in matched:
+            matched.append(local)
+    return matched, unavailable
 
 
 async def process_theatre(
@@ -1619,8 +1668,8 @@ async def process_theatre(
     base_config: Config,
     started_at: datetime,
     args: argparse.Namespace,
-    cli_experiences: Sequence[str],
-    cli_dates: Sequence[str],
+    requested_experiences: Sequence[ExperienceOption],
+    requested_dates: Sequence[DateOption],
 ) -> dict[str, object]:
     theatre_report: dict[str, object] = {
         "theatre": asdict(theatre),
@@ -1628,6 +1677,8 @@ async def process_theatre(
         "output_dir": None,
         "experiences": [],
         "dates": [],
+        "unavailable_experiences": [],
+        "unavailable_dates": [],
         "captures": [],
         "skipped_sessions": [],
         "errors": [],
@@ -1635,6 +1686,34 @@ async def process_theatre(
     try:
         print(f"\n=== Theatre: {theatre.name} ===")
         await select_theatre(page, theatre)
+
+        available_experiences = await collect_experience_options(page)
+        selected_experiences, unavailable_experiences = map_experience_options(
+            requested_experiences,
+            available_experiences,
+        )
+        theatre_report["unavailable_experiences"] = unavailable_experiences
+        if requested_experiences and not selected_experiences:
+            await select_experiences(page, [])
+            theatre_report["status"] = "skipped-unavailable"
+            print(
+                "Skipping theatre: none of the selected formats are available "
+                f"at {theatre.name}."
+            )
+            return theatre_report
+        await select_experiences(page, selected_experiences)
+        theatre_report["experiences"] = [option.label for option in selected_experiences]
+
+        available_dates = await collect_date_options(page)
+        selected_dates, unavailable_dates = map_date_options(requested_dates, available_dates)
+        theatre_report["unavailable_dates"] = unavailable_dates
+        theatre_report["dates"] = [option.label for option in selected_dates]
+        if not selected_dates:
+            await _back_from_drawer(page, "Select date")
+            theatre_report["status"] = "skipped-unavailable"
+            print(f"Skipping theatre: none of the selected dates are available at {theatre.name}.")
+            return theatre_report
+
         run_output_dir = create_run_output_dir(
             base_config.output_dir,
             started_at,
@@ -1644,24 +1723,6 @@ async def process_theatre(
         theatre_config = replace(base_config, output_dir=run_output_dir)
         theatre_report["output_dir"] = str(run_output_dir)
         print(f"Run output directory: {run_output_dir}")
-
-        selected_experiences = await choose_experiences_for_theatre(
-            page,
-            theatre,
-            cli_experiences,
-            dry_run=args.dry_run,
-        )
-        await select_experiences(page, selected_experiences)
-        theatre_report["experiences"] = [option.label for option in selected_experiences]
-
-        selected_dates = await choose_dates_for_theatre(
-            page,
-            theatre,
-            cli_dates,
-            all_dates=args.all_dates,
-            dry_run=args.dry_run,
-        )
-        theatre_report["dates"] = [option.label for option in selected_dates]
 
         if args.dry_run:
             await _back_from_drawer(page, "Select date")
@@ -1687,25 +1748,9 @@ async def process_theatre(
         theatre_report["status"] = "complete" if not errors else "complete-with-errors"
         print(
             f"\nTheatre crawl complete: captured {len(captures)} screenshot(s), "
-            f"skipped {len(skipped_sessions)} sold-out session(s) in {run_output_dir}"
+            f"skipped {len(skipped_sessions)} unavailable session(s) in {run_output_dir}"
         )
 
-        if captures:
-            should_filter = args.filter
-            if should_filter is None:
-                should_filter = await prompt_yes_no(
-                    f"Continue with screenshot filtering for {theatre.name}?"
-                )
-            if should_filter:
-                theatre_report["filtering"] = await filter_captures_interactively(
-                    run_output_dir,
-                    captures,
-                )
-            else:
-                theatre_report["filtering"] = {
-                    "status": "skipped",
-                    "reason": "User stopped after theatre crawl",
-                }
         return theatre_report
     except KeyboardInterrupt:
         raise
@@ -1735,8 +1780,8 @@ async def process_selected_theatres(
     config: Config,
     started_at: datetime,
     args: argparse.Namespace,
-    cli_experiences: Sequence[str],
-    cli_dates: Sequence[str],
+    requested_experiences: Sequence[ExperienceOption],
+    requested_dates: Sequence[DateOption],
 ) -> list[dict[str, object]]:
     theatre_runs: list[dict[str, object]] = []
     for index, theatre in enumerate(theatres):
@@ -1774,11 +1819,54 @@ async def process_selected_theatres(
                 config,
                 started_at,
                 args,
-                cli_experiences,
-                cli_dates,
+                requested_experiences,
+                requested_dates,
             )
         )
     return theatre_runs
+
+
+async def filter_theatre_runs_interactively(
+    theatre_runs: Sequence[dict[str, object]],
+    filter_choice: bool | None,
+) -> None:
+    filterable_runs = [
+        theatre_run
+        for theatre_run in theatre_runs
+        if isinstance(theatre_run.get("captures"), list) and theatre_run["captures"]
+    ]
+    if not filterable_runs:
+        return
+
+    should_filter = filter_choice
+    if should_filter is None:
+        should_filter = await prompt_yes_no("Continue with screenshot filtering?")
+    if not should_filter:
+        for theatre_run in filterable_runs:
+            theatre_run["filtering"] = {
+                "status": "skipped",
+                "reason": "User stopped after all theatre crawls",
+            }
+        return
+
+    ticket_count = await prompt_positive_int("How many side-by-side tickets do you need?")
+    for theatre_run in filterable_runs:
+        theatre_data = theatre_run.get("theatre", {})
+        theatre_name = (
+            str(theatre_data.get("name", "Unknown theatre"))
+            if isinstance(theatre_data, dict)
+            else "Unknown theatre"
+        )
+        output_dir = theatre_run.get("output_dir")
+        captures = theatre_run["captures"]
+        if not output_dir or not isinstance(captures, list):
+            continue
+        print(f"\n=== Filtering: {theatre_name} ===")
+        theatre_run["filtering"] = await filter_captures_interactively(
+            Path(str(output_dir)),
+            captures,
+            ticket_count=ticket_count,
+        )
 
 
 def finalize_theatre_runs(
@@ -1826,7 +1914,7 @@ def finalize_theatre_runs(
             report["filtering"] = only_run["filtering"]
 
     statuses = [str(theatre_run["status"]) for theatre_run in theatre_runs]
-    successful = {"complete", "dry-run-complete"}
+    successful = {"complete", "dry-run-complete", "skipped-unavailable"}
     if statuses and all(status == "dry-run-complete" for status in statuses):
         report["status"] = "dry-run-complete"
     elif statuses and all(status == "failed" for status in statuses):
@@ -1911,6 +1999,16 @@ async def run(args: argparse.Namespace) -> int:
             await select_movie(page, movie)
             report["movie"] = movie.title
 
+            date_options = await collect_date_options(page)
+            selected_dates = await choose_dates(
+                date_options,
+                _split_cli_values(args.date),
+                all_dates=args.all_dates,
+                dry_run=args.dry_run,
+            )
+            report["requested_dates"] = [option.label for option in selected_dates]
+            await _back_from_drawer(page, "Select date")
+
             theatres = await collect_theatre_options(page, config.max_distance_km)
             selected_theatres = await choose_theatres(
                 theatres,
@@ -1918,8 +2016,19 @@ async def run(args: argparse.Namespace) -> int:
                 dry_run=args.dry_run,
             )
             report["theatres"] = [asdict(theatre) for theatre in selected_theatres]
-            cli_experiences = _split_cli_values(args.experience)
-            cli_dates = _split_cli_values(args.date)
+            await _back_from_drawer(page, "Select a theatre")
+
+            experience_options = await collect_experience_options(page)
+            selected_experiences = await choose_experiences(
+                experience_options,
+                _split_cli_values(args.experience),
+                dry_run=args.dry_run,
+            )
+            report["requested_experiences"] = [
+                option.label for option in selected_experiences
+            ]
+            await select_experiences(page, [])
+
             theatre_runs = await process_selected_theatres(
                 page,
                 movie,
@@ -1927,11 +2036,12 @@ async def run(args: argparse.Namespace) -> int:
                 config,
                 started_at,
                 args,
-                cli_experiences,
-                cli_dates,
+                selected_experiences,
+                selected_dates,
             )
             report["theatre_runs"] = theatre_runs
 
+            await filter_theatre_runs_interactively(theatre_runs, args.filter)
             finalize_theatre_runs(report, theatre_runs)
             captures = report["captures"]
             skipped_sessions = report["skipped_sessions"]
@@ -1940,7 +2050,7 @@ async def run(args: argparse.Namespace) -> int:
 
             print(
                 f"\nAll theatre crawls finished: {len(theatre_runs)} theatre(s), "
-                f"{len(captures)} screenshot(s), {len(skipped_sessions)} sold-out skip(s)."
+                f"{len(captures)} screenshot(s), {len(skipped_sessions)} unavailable skip(s)."
             )
 
             report["finished_at"] = datetime.now(timezone.utc).isoformat()

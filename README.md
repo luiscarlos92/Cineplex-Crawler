@@ -57,7 +57,7 @@ Useful safety and validation options include:
 - `--max-distance-km N`: override the configured theatre-distance threshold.
 - `--headless` / `--no-headless`: override the `.env` browser mode.
 - `--filter` / `--no-filter`: enter or skip post-crawl filtering without the
-  initial yes/no question. The default asks after every successful crawl.
+  initial yes/no question. The default asks once after all theatre crawls.
 
 Run `python crawler.py --help` for the complete option list. Generated
 screenshots go to `output/`; timestamped machine-readable run reports go to
@@ -66,21 +66,24 @@ numeric suffix is added when a filename already exists.
 
 ## Multiple theatres
 
-The movie is chosen once, then the selected theatres are processed
-sequentially. Before each theatre after the first, the crawler reloads Tickets
-and restores that movie so Cineplex cannot carry experience filters across
-cinemas. Experience/format and date choices are requested separately for each
-theatre because availability and schedules can differ by location. Command-line
-`--experience` and `--date` values are reapplied to each theatre; if a requested
-value is unavailable, that theatre records an error and the crawler continues
-with the next theatre when browser-state recovery succeeds.
+The interactive setup order is movie, dates, theatres, then formats. Dates and
+formats are chosen once, before crawling starts. The selected theatres are then
+processed sequentially without further crawl prompts. Before each theatre after
+the first, the crawler reloads Tickets and restores the movie so Cineplex cannot
+carry filters across cinemas.
+
+Each theatre's live date and format controls are rediscovered automatically and
+matched to the global choices. Choices unavailable at one theatre are recorded
+in that theatre's report and skipped there. If none of the selected dates or
+formats are available, that theatre is marked `skipped-unavailable`; the crawler
+never falls back to an unintended unfiltered crawl.
 
 Each theatre receives its own
-`YYYYMMDD-HHMMSS-MovieName-TheatreName` output directory. Post-crawl filtering
-also runs independently per theatre, so auditorium layouts, rows, formats, and
-seat availability are never mixed between cinemas. `--filter` or `--no-filter`
-applies to every theatre; without either option, the crawler asks after each
-theatre crawl.
+`YYYYMMDD-HHMMSS-MovieName-TheatreName` output directory. After every crawl has
+finished, the crawler asks once whether to filter and asks once for the shared
+ticket count. It then filters each theatre independently, asking for that
+theatre's rows and timeslots so auditorium layouts and availability are never
+mixed between cinemas.
 
 The JSON report stores one entry per theatre under `theatre_runs`, plus
 top-level aggregate captures, sold-out skips, and errors. Single-theatre runs
@@ -107,24 +110,24 @@ overlay to remain absent before collecting seat data or taking a screenshot.
 If the loader does not clear before the timeout, that capture fails instead of
 saving an obstructed or stale image.
 
-If Cineplex reports that a showtime is sold out, the crawler dismisses the
-modal with `Change showtime`, records that session under `skipped_sessions` in
-the run report, and continues with the remaining timeslots. Sold-out sessions
-do not create screenshots and do not stop the crawl.
+If Cineplex reports that a showtime is sold out, the crawler either skips its
+already-disabled timeslot button before clicking or dismisses the modal with
+`Change showtime`. The session is recorded under `skipped_sessions`, no
+screenshot is created, and the remaining timeslots continue.
 
 ## Post-crawl filtering
 
-After each successful theatre crawl, the crawler asks whether to continue with
-screenshot filtering for that theatre. If accepted, it:
+After all successful theatre crawls, the crawler asks once whether to continue
+with filtering. If accepted, it asks once for the number of side-by-side tickets
+and then handles each theatre separately:
 
-1. Condenses captured sessions by format and consecutive date ranges that have
-   the same schedule, then asks for a multi-selection of format/timeslot choices.
-2. Asks how many side-by-side tickets are required.
-3. Detects distinct auditorium layouts and asks for acceptable rows once per
+1. Detects distinct auditorium layouts and asks for acceptable rows once per
    format/layout combination.
-4. Keeps a screenshot when at least one selected row contains the requested
+2. Condenses captured sessions by format and consecutive date ranges that have
+   the same schedule, then asks for a multi-selection of format/timeslot choices.
+3. Keeps a screenshot when at least one selected row contains the requested
    number of adjacent available ordinary seats.
-5. Moves matches to `filtered/` and all leftovers to `discarded/` inside the run
+4. Moves matches to `filtered/` and all leftovers to `discarded/` inside the run
    directory.
 
 Seat filtering uses semantic metadata captured from the live seat map, including
