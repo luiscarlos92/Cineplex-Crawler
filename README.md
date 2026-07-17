@@ -91,6 +91,10 @@ as side by side.
 The run report records all filter choices, detected layouts and rows,
 qualifying seat blocks, move reasons, and final screenshot paths.
 
+Rows are entered directly by letter. Commas and inclusive ranges are supported,
+for example `A,B,C,F-J`; use `all` to select every displayed row. Multi-letter
+row ranges such as `AA-DD` follow the auditorium's displayed row order.
+
 After the editable install, `cineplex-crawler` can be used in place of
 `python crawler.py`.
 

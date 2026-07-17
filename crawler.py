@@ -346,6 +346,58 @@ def prompt_multi_choice(
         print("Please enter one or more displayed numbers.")
 
 
+def parse_row_selection(raw: str, available_rows: Sequence[str]) -> list[str]:
+    normalized_rows = {row.casefold(): row for row in available_rows}
+    value = raw.strip()
+    if value.casefold() == "all":
+        return list(available_rows)
+    if not value:
+        raise ValueError("Enter at least one row")
+
+    selected: list[str] = []
+    for token in value.split(","):
+        token = token.strip()
+        range_match = re.fullmatch(r"([A-Za-z]+)\s*-\s*([A-Za-z]+)", token)
+        if range_match:
+            start_key = range_match.group(1).casefold()
+            end_key = range_match.group(2).casefold()
+            if start_key not in normalized_rows or end_key not in normalized_rows:
+                raise ValueError(f"Unknown row range: {token}")
+            start_row = normalized_rows[start_key]
+            end_row = normalized_rows[end_key]
+            start_index = available_rows.index(start_row)
+            end_index = available_rows.index(end_row)
+            if start_index > end_index:
+                raise ValueError(f"Row range must follow the displayed order: {token}")
+            for row in available_rows[start_index : end_index + 1]:
+                if row not in selected:
+                    selected.append(row)
+            continue
+
+        key = token.casefold()
+        if key not in normalized_rows:
+            raise ValueError(f"Unknown row: {token or '(blank)'}")
+        row = normalized_rows[key]
+        if row not in selected:
+            selected.append(row)
+    return selected
+
+
+def prompt_row_selection(available_rows: Sequence[str], label: str) -> list[str]:
+    if not available_rows:
+        return []
+    print(f"\n{label}")
+    print(f"Available rows: {', '.join(available_rows)}")
+    while True:
+        raw = input("Enter rows (example A,B,C,F-J), 'all' for every row (or 'q' to quit): ").strip()
+        if raw.casefold() in {"q", "quit", "exit"}:
+            raise KeyboardInterrupt
+        try:
+            return parse_row_selection(raw, available_rows)
+        except ValueError as exc:
+            print(f"{exc}. Please use displayed row letters and ranges.")
+
+
 def prompt_yes_no(question: str, *, default: bool = False) -> bool:
     suffix = "[Y/n]" if default else "[y/N]"
     while True:
@@ -1015,7 +1067,7 @@ def filter_captures_interactively(
     layout_groups = build_layout_groups(captures, selected_indexes)
     selected_rows_by_layout: dict[tuple[str, str], set[str]] = {}
     for group in layout_groups:
-        selected_rows = prompt_multi_choice(
+        selected_rows = prompt_row_selection(
             group.rows,
             f"Select acceptable rows for {group.display_name}",
         )
@@ -1094,7 +1146,11 @@ def filter_captures_interactively(
             "layout_signature": group.signature,
             "dates": list(group.date_labels),
             "detected_rows": list(group.rows),
-            "selected_rows": sorted(selected_rows_by_layout.get((group.format_name, group.signature), set())),
+            "selected_rows": [
+                row
+                for row in group.rows
+                if row in selected_rows_by_layout.get((group.format_name, group.signature), set())
+            ],
         }
         for group in layout_groups
     ]

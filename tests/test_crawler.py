@@ -177,6 +177,22 @@ def test_timeslot_choices_split_when_schedule_changes():
     assert choices[2].period_labels == ("Sunday — July 19, 2026",)
 
 
+def test_row_selection_accepts_letters_commas_and_ranges():
+    rows = ["AA", "BB", "CC", "DD", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J"]
+
+    assert crawler.parse_row_selection("A,B,C,F-J", rows) == ["A", "B", "C", "F", "G", "H", "I", "J"]
+    assert crawler.parse_row_selection("aa-dd", rows) == ["AA", "BB", "CC", "DD"]
+    assert crawler.parse_row_selection("A", rows) == ["A"]
+    assert crawler.parse_row_selection("all", rows) == rows
+
+
+def test_row_selection_rejects_unknown_and_reverse_ranges():
+    with pytest.raises(ValueError, match="Unknown row"):
+        crawler.parse_row_selection("Z", ["A", "B", "C"])
+    with pytest.raises(ValueError, match="displayed order"):
+        crawler.parse_row_selection("C-A", ["A", "B", "C"])
+
+
 def test_interactive_filter_moves_matches_and_leftovers(monkeypatch, tmp_path):
     run_dir = tmp_path / "run"
     run_dir.mkdir()
@@ -212,7 +228,7 @@ def test_interactive_filter_moves_matches_and_leftovers(monkeypatch, tmp_path):
             "seats": unavailable_layout,
         },
     ]
-    answers = iter(["a", "2", "a"])
+    answers = iter(["a", "2", "all"])
     monkeypatch.setattr("builtins.input", lambda _prompt: next(answers))
 
     summary = crawler.filter_captures_interactively(run_dir, captures)

@@ -55,6 +55,8 @@ This document preserves the documentation-only workflow for the Cineplex browser
      - Ask for the required number of side-by-side tickets.
      - Detect distinct auditorium layouts from the captured seat metadata.
      - For each format/layout combination, display its detected rows and ask for a row multi-selection.
+       - Accept direct row letters, comma-separated values, and inclusive ranges such as `A,B,C,F-J` or `AA-DD`.
+       - Use `all` to select every displayed row; `A` selects row A rather than meaning all.
      - Keep a screenshot if at least one selected row contains the requested number of adjacent available ordinary seats.
      - Move kept screenshots to `filtered/` and all other captures to `discarded/` within the run directory.
 
